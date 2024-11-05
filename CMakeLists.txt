@@ -1,38 +1,37 @@
-cmake_minimum_required(VERSION 3.14)  # Updated to 3.14 for FetchContent improvements
-project(plot2d)
+cmake_minimum_required(VERSION 3.24)
 
-set(CMAKE_CXX_STANDARD 20)
+include(cmake/prelude.cmake)
 
-file(GLOB srcs src/*.cpp include/plotz/*.hpp)
+project(
+    plotz
+    VERSION 0.0.1
+    LANGUAGES CXX
+)
 
-# Organize files into directories
-foreach(FILE ${srcs})
-   # Get the directory of the source file
-   get_filename_component(PARENT_DIR "${FILE}" PATH)
+include(cmake/project-is-top-level.cmake)
+include(cmake/variables.cmake)
 
-   # Remove common directory prefix to make the group
-   string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "" GROUP "${PARENT_DIR}")
+add_library(${PROJECT_NAME}_${PROJECT_NAME} INTERFACE)
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME}_${PROJECT_NAME})
 
-if(MSVC)
-   # Make sure we are using windows slashes
-   string(REPLACE "/" "\\" GROUP "${GROUP}")
+if (MSVC)
+   string(REGEX MATCH "\/cl(.exe)?$" matched_cl ${CMAKE_CXX_COMPILER})
+   if (matched_cl)
+      # for a C++ standards compliant preprocessor, not needed for clang-cl
+      target_compile_options(${PROJECT_NAME}_${PROJECT_NAME} INTERFACE "/Zc:preprocessor" /GL /permissive- /Zc:lambda)
+      target_link_options(${PROJECT_NAME}_${PROJECT_NAME} INTERFACE /LTCG /INCREMENTAL:NO)
+   endif()
+else()
+   target_compile_options(${PROJECT_NAME}_${PROJECT_NAME} INTERFACE "-Wno-missing-braces")
 endif()
 
-   # Group into "Source Files" and "Header Files"
-   if ("${FILE}" MATCHES ".*\\.cpp")
-      set(GROUP "Source Files${GROUP}")
-   elseif("${FILE}" MATCHES ".*\\.h")
-      set(GROUP "Header Files${GROUP}")
-   endif()
+set_property(TARGET ${PROJECT_NAME}_${PROJECT_NAME} PROPERTY EXPORT_NAME ${PROJECT_NAME})
 
-   source_group("${GROUP}" FILES "${FILE}")
-endforeach()
-
-# Include directories
-include_directories(include)
-
-# Include FetchContent module
-include(FetchContent)
+target_compile_features(${PROJECT_NAME}_${PROJECT_NAME} INTERFACE cxx_std_20)
+target_include_directories(
+    ${PROJECT_NAME}_${PROJECT_NAME} ${warning_guard}
+    INTERFACE "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
+)
 
 # Find libpng
 find_package(PNG REQUIRED)
@@ -51,35 +50,21 @@ else()
     message(FATAL_ERROR "FreeType not found!")
 endif()
 
-# Add the executable target
-add_executable(${PROJECT_NAME} ${srcs})
+if(NOT CMAKE_SKIP_INSTALL_RULES)
+  include(cmake/install-rules.cmake)
+endif()
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE 
-    FONTS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/fonts\"
-)
-
-# Include directories for the target
-target_include_directories(${PROJECT_NAME} PUBLIC
+target_include_directories(${PROJECT_NAME}_${PROJECT_NAME} INTERFACE
     ${PNG_INCLUDE_DIRS}
-    ${glaze_SOURCE_DIR}/include
-    include
-)
-
-# Link libraries to the target
-target_link_libraries(${PROJECT_NAME} PUBLIC
-    ${PNG_LIBRARIES}
-)
-
-# If using any definitions or properties, set them here
-# For example, if you need to define PNG_DEBUG
-# target_compile_definitions(${PROJECT_NAME} PRIVATE PNG_DEBUG)
-
-# Include directories for FreeType
-target_include_directories(${PROJECT_NAME} PUBLIC
     ${FREETYPE_INCLUDE_DIRS}
 )
 
-# Link FreeType library
-target_link_libraries(${PROJECT_NAME} PUBLIC
+# Link libraries to the target
+target_link_libraries(${PROJECT_NAME}_${PROJECT_NAME} INTERFACE
+    ${PNG_LIBRARIES}
     ${FREETYPE_LIBRARIES}
 )
+
+if (PROJECT_IS_TOP_LEVEL)
+  include(cmake/dev-mode.cmake)
+endif()
