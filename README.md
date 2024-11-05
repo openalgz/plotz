@@ -1,2 +1,7 @@
-# plotz
-Easy to use, specialized plotting algorithms (focused on 2D)
+# Plotz
+Fast, C++ image plotting with minimal dependencies.
+
+## Dependencies
+
+- libPNG
+- Freetype
