@@ -377,10 +377,36 @@ void magnitude_mapped_test()
    return plotz::write_png("magnitude_mapped.png", image.data(), w, h);
 }
 
+void magnitude_mapped_shrink_test()
+{
+   static constexpr size_t w_data = 1024, h_data = 1024;
+   static constexpr size_t w = 512, h = 512;
+
+   plotz::magnitude_mapped plot(w_data, h_data, w, h);
+
+   for (uint32_t y = 0; y < h_data; ++y) {
+      for (uint32_t x = 0; x < w_data; ++x) {
+         float magnitude = float(x + y) / (w_data + h_data);
+         plot.add_point(x, y, magnitude);
+      }
+   }
+
+   std::vector<uint8_t> image = plot.render();
+
+   std::string text = "Sample Mapped Magnitude Plot";
+   std::string font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
+   float font_percent = 2.f;
+
+   plotz::render_text_to_image(image.data(), w, h, text, font_filename, font_percent);
+
+   return plotz::write_png("magnitude_mapped_shrink.png", image.data(), w, h);
+}
+
 int main()
 {
    heatmap_test();
    magnitude_test();
    magnitude_test2();
    magnitude_mapped_test();
+   magnitude_mapped_shrink_test();
 }
