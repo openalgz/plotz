@@ -74,16 +74,15 @@ namespace plotz
       // Render the buffer to a color buffer using a specified color scheme
       std::vector<uint8_t> render(const std::vector<uint8_t>& colors)
       {
+         shift_buffer_to_non_negative();
          float saturation = max_magnitude > 0.0f ? max_magnitude : 1.0f;
          return render_saturated(colors, saturation);
       }
 
       // Method to render with a specific saturation level
-      std::vector<uint8_t> render_saturated(const std::vector<uint8_t>& colors, float saturation)
+      std::vector<uint8_t> render_saturated(const std::vector<uint8_t>& colors, float saturation) const
       {
          assert(saturation > 0.0f);
-         
-         shift_buffer_to_non_negative();
 
          size_t total_pixels = static_cast<size_t>(width) * height;
          std::vector<uint8_t> colorbuf(total_pixels * 4); // Assuming RGBA
@@ -228,16 +227,15 @@ namespace plotz
       // Render the buffer to a color buffer using a specified color scheme
       std::vector<uint8_t> render(const std::vector<uint8_t>& colors)
       {
+         shift_buffer_to_non_negative();
          float saturation = max_magnitude > 0.0f ? max_magnitude : 1.0f;
          return render_saturated(colors, saturation);
       }
 
       // Method to render with a specific saturation level
-      std::vector<uint8_t> render_saturated(const std::vector<uint8_t>& colors, float saturation)
+      std::vector<uint8_t> render_saturated(const std::vector<uint8_t>& colors, float saturation) const
       {
          assert(saturation > 0.0f);
-         
-         shift_buffer_to_non_negative();
 
          size_t total_pixels = static_cast<size_t>(image_width) * image_height;
          std::vector<uint8_t> colorbuf(total_pixels * 4, 0); // Assuming RGBA
