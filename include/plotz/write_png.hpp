@@ -13,7 +13,7 @@
 
 namespace plotz
 {
-   inline uint32_t write_png(const std::string& filename, const uint8_t* data, size_t w, size_t h)
+   inline void write_png(const std::string& filename, const uint8_t* data, size_t w, size_t h)
    {
       png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
       if (!png_ptr) {
@@ -55,6 +55,5 @@ namespace plotz
       png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, nullptr);
 
       png_destroy_write_struct(&png_ptr, &info_ptr);
-      return 0;
    }
 }
