@@ -45,17 +45,13 @@ namespace plotz
       std::vector<uint8_t> data(total_bytes);
       uint8_t* it = data.data();
 
-      auto segment = std::make_unique_for_overwrite<uint8_t[]>(bytes_per_segment);
-
       for (size_t i = 0; i < num_segments; ++i) {
          const auto& start = key_colors[i];
          const auto& end = key_colors[i + 1];
 
          // Generate the segment data
-         interpolate_color(segment.get(), start, end,
-                           steps_between_keys);
+         interpolate_color(it, start, end, steps_between_keys);
 
-         std::memcpy(it, segment.get(), bytes_per_segment);
          it += bytes_per_segment;
       }
 
