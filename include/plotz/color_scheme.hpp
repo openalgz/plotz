@@ -28,7 +28,6 @@ namespace plotz
          colors[ix + 2] = b;
          colors[ix + 3] = a;
       }
-      return colors;
    }
 
    inline std::vector<uint8_t> make_color_scheme(const std::vector<rgba>& key_colors, int steps_between_keys = 128)
