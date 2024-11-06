@@ -5,11 +5,11 @@
 
 #include <png.h>
 
-#include <stdexcept>
 #include <cstdint>
+#include <format>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <format>
 
 namespace plotz
 {
@@ -31,32 +31,29 @@ namespace plotz
          throw std::runtime_error("Error during PNG creation.");
       }
 
-      FILE* fp = fopen(filename.c_str(), "wb");
+      std::unique_ptr<FILE, decltype(&fclose)> fp(fopen(filename.c_str(), "wb"), &fclose);
       if (!fp) {
          png_destroy_write_struct(&png_ptr, &info_ptr);
          throw std::runtime_error(std::format("Error writing {}: {}", filename, std::strerror(errno)));
       }
-      png_init_io(png_ptr, fp);
+      png_init_io(png_ptr, fp.get());
 
       // Set PNG header information.
       static constexpr int bit_depth = 8;
       static constexpr int color_type = PNG_COLOR_TYPE_RGB_ALPHA;
-      static constexpr int interlace_type = PNG_INTERLACE_NONE; // or PNG_INTERLACE_ADAM7
+      static constexpr int interlace_type = PNG_INTERLACE_NONE;
       png_set_IHDR(png_ptr, info_ptr, static_cast<png_uint_32>(w), static_cast<png_uint_32>(h), bit_depth, color_type,
                    interlace_type, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
-      // Allocate memory for row pointers.
-      std::vector<png_bytep> row_pointers(h);
+      auto row_pointers = std::make_unique_for_overwrite<png_bytep[]>(h);
       for (size_t y = 0; y < h; ++y) {
          row_pointers[y] = const_cast<png_bytep>(data + y * w * 4);
       }
-      png_set_rows(png_ptr, info_ptr, row_pointers.data());
+      png_set_rows(png_ptr, info_ptr, row_pointers.get());
 
       // Write the PNG image data.
       png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, nullptr);
 
-      // Cleanup
-      fclose(fp);
       png_destroy_write_struct(&png_ptr, &info_ptr);
       return 0;
    }

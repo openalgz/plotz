@@ -13,36 +13,52 @@ namespace plotz
    inline constexpr rgba white{255, 255, 255, 255};
    inline constexpr rgba black{0, 0, 0, 255};
 
-   inline std::vector<uint8_t> interpolate_color(uint8_t r1, uint8_t g1, uint8_t b1, uint8_t a1, uint8_t r2, uint8_t g2,
-                                                 uint8_t b2, uint8_t a2, int steps)
+   // colors must be allocated with a length of steps * 4
+   inline void interpolate_color(uint8_t* colors, const rgba& c1, const rgba& c2, int steps) noexcept
    {
-      std::vector<uint8_t> colors;
       for (int i = 0; i < steps; ++i) {
-         float ratio = static_cast<float>(i) / (steps - 1);
-         uint8_t r = static_cast<uint8_t>(r1 + ratio * (r2 - r1));
-         uint8_t g = static_cast<uint8_t>(g1 + ratio * (g2 - g1));
-         uint8_t b = static_cast<uint8_t>(b1 + ratio * (b2 - b1));
-         uint8_t a = static_cast<uint8_t>(a1 + ratio * (a2 - a1));
-         colors.push_back(r);
-         colors.push_back(g);
-         colors.push_back(b);
-         colors.push_back(a);
+         float ratio = float(i) / (steps - 1);
+         uint8_t r = uint8_t(c1[0] + ratio * (c2[0] - c1[0]));
+         uint8_t g = uint8_t(c1[1] + ratio * (c2[1] - c1[1]));
+         uint8_t b = uint8_t(c1[2] + ratio * (c2[2] - c1[2]));
+         uint8_t a = uint8_t(c1[3] + ratio * (c2[3] - c1[3]));
+         const auto ix = i * 4;
+         colors[ix] = r;
+         colors[ix + 1] = g;
+         colors[ix + 2] = b;
+         colors[ix + 3] = a;
       }
       return colors;
    }
 
-   inline std::vector<uint8_t> make_color_scheme(const std::vector<rgba>& key_colors, int steps_between_keys = 100)
+   inline std::vector<uint8_t> make_color_scheme(const std::vector<rgba>& key_colors, int steps_between_keys = 128)
    {
-      std::vector<uint8_t> data;
-      data.reserve((key_colors.size() - 1) * steps_between_keys * 4);
+      if (key_colors.size() < 2) {
+         // Not enough key colors to interpolate
+         return {};
+      }
 
-      for (size_t i = 0; i < key_colors.size() - 1; ++i) {
+      const size_t num_segments = key_colors.size() - 1;
+      const size_t bytes_per_segment = steps_between_keys * 4; // 4 bytes (RGBA)
+      const size_t total_bytes = num_segments * bytes_per_segment;
+
+      std::vector<uint8_t> data(total_bytes);
+      uint8_t* it = data.data();
+
+      auto segment = std::make_unique_for_overwrite<uint8_t[]>(bytes_per_segment);
+
+      for (size_t i = 0; i < num_segments; ++i) {
          const auto& start = key_colors[i];
          const auto& end = key_colors[i + 1];
-         std::vector<uint8_t> segment = interpolate_color(start[0], start[1], start[2], start[3], end[0], end[1],
-                                                          end[2], end[3], steps_between_keys);
-         data.insert(data.end(), segment.begin(), segment.end());
+
+         // Generate the segment data
+         interpolate_color(segment.get(), start, end,
+                           steps_between_keys);
+
+         std::memcpy(it, segment.get(), bytes_per_segment);
+         it += bytes_per_segment;
       }
+
       return data;
    }
 
