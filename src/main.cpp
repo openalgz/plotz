@@ -69,7 +69,7 @@ inline void render_text_to_image(uint8_t* image, size_t img_width, size_t img_he
             pixel[0] = (pixel[0] * inv_alpha + 255 * alpha) / 255; // R
             pixel[1] = (pixel[1] * inv_alpha + 255 * alpha) / 255; // G
             pixel[2] = (pixel[2] * inv_alpha + 255 * alpha) / 255; // B
-            pixel[3] = std::min(255, pixel[3] + alpha); // A
+            pixel[3] = (std::min)(255, pixel[3] + alpha); // A
          }
       }
 
@@ -119,7 +119,7 @@ inline void draw_legend(uint8_t* image, size_t img_width, size_t img_height, siz
       float value = static_cast<float>(legend_bar_height - y - 1) / static_cast<float>(legend_bar_height - 1);
 
       size_t color_idx = static_cast<size_t>(value * (ncolors - 1) + 0.5f);
-      color_idx = std::min(color_idx, ncolors - 1);
+      color_idx = (std::min)(color_idx, ncolors - 1);
       const unsigned char* color = &colors[color_idx * 4];
 
       for (size_t x = legend_bar_left; x < legend_bar_right; ++x) {
@@ -170,7 +170,7 @@ std::vector<std::complex<float>> generateSpiral(int width, int height, int numPo
 
    float centerX = width / 2.0f;
    float centerY = height / 2.0f;
-   float maxRadius = std::min(width, height) / 2.0f;
+   float maxRadius = (std::min)(width, height) / 2.0f;
 
    for (int i = 0; i < numPoints; ++i) {
       float t = static_cast<float>(i) / numPoints;

@@ -17,8 +17,7 @@ namespace plotz
    {
       magnitude(uint32_t width_in, uint32_t height_in) noexcept
          : width(width_in),
-           height(height_in),
-           min_magnitude(std::numeric_limits<float>::max())
+           height(height_in)
       {}
 
       magnitude(const magnitude&) noexcept = default;
@@ -28,7 +27,7 @@ namespace plotz
 
       uint32_t width{}, height{}; // Dimensions of the plot
       float max_magnitude = std::numeric_limits<float>::lowest(); // Maximum magnitude value for normalization
-      float min_magnitude = std::numeric_limits<float>::max(); // Minimum magnitude value in the buffer
+      float min_magnitude = (std::numeric_limits<float>::max)(); // Minimum magnitude value in the buffer
       std::vector<float> buffer = std::vector<float>(width * height); // Buffer to store magnitude values
 
       // Add a point to the buffer
@@ -101,7 +100,7 @@ namespace plotz
 
             // Determine the color index
             size_t color_idx = static_cast<size_t>((ncolors - 1) * normalized + 0.5f);
-            color_idx = std::min(color_idx, ncolors - 1);
+            color_idx = (std::min)(color_idx, ncolors - 1);
 
             // Assign the color to the buffer
             std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
@@ -114,7 +113,7 @@ namespace plotz
       {
          std::fill(buffer.begin(), buffer.end(), 0.0f);
          max_magnitude = std::numeric_limits<float>::lowest();
-         min_magnitude = std::numeric_limits<float>::max();
+         min_magnitude = (std::numeric_limits<float>::max)();
       }
    };
 
@@ -127,7 +126,7 @@ namespace plotz
       uint32_t image_width{}, image_height{};
       
       float max_magnitude = std::numeric_limits<float>::lowest(); // Maximum magnitude value for normalization
-      float min_magnitude = std::numeric_limits<float>::max(); // Minimum magnitude value in the buffer
+      float min_magnitude = (std::numeric_limits<float>::max)(); // Minimum magnitude value in the buffer
 
       // Buffer to store magnitude values mapped to image dimensions
       std::vector<float> buffer = std::vector<float>(image_width * image_height, 0.0f);
@@ -181,8 +180,8 @@ namespace plotz
          uint32_t end_x = static_cast<uint32_t>((input_x + 1) * scale_x);
          uint32_t end_y = static_cast<uint32_t>((input_y + 1) * scale_y);
 
-         end_x = std::min(end_x, image_width);
-         end_y = std::min(end_y, image_height);
+         end_x = (std::min)(end_x, image_width);
+         end_y = (std::min)(end_y, image_height);
 
          // Iterate over the block of pixels and accumulate magnitude
          for (uint32_t img_y = start_y; img_y < end_y; ++img_y) {
@@ -254,7 +253,7 @@ namespace plotz
 
             // Determine the color index
             size_t color_idx = static_cast<size_t>((ncolors - 1) * normalized + 0.5f);
-            color_idx = std::min(color_idx, ncolors - 1);
+            color_idx = (std::min)(color_idx, ncolors - 1);
 
             // Assign the color to the buffer
             std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
@@ -267,7 +266,7 @@ namespace plotz
       {
          std::fill(buffer.begin(), buffer.end(), 0.0f);
          max_magnitude = std::numeric_limits<float>::lowest();
-         min_magnitude = std::numeric_limits<float>::max();
+         min_magnitude = (std::numeric_limits<float>::max)();
       }
    };
 }

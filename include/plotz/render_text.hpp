@@ -70,8 +70,8 @@ namespace plotz
       int y_pos = int(img_height) - int(int(img_height + text_height) / 10);
 
       // Ensure starting positions are within the image boundaries
-      x_pos = std::max(0, x_pos);
-      y_pos = std::min(static_cast<int>(img_height), std::max(0, y_pos));
+      x_pos = (std::max)(0, x_pos);
+      y_pos = (std::min)(static_cast<int>(img_height), (std::max)(0, y_pos));
 
       // Starting position
       int pen_x = x_pos;
@@ -114,7 +114,7 @@ namespace plotz
                pixel[0] = (pixel[0] * inv_alpha + text_color[0] * alpha) / 255; // Red
                pixel[1] = (pixel[1] * inv_alpha + text_color[1] * alpha) / 255; // Green
                pixel[2] = (pixel[2] * inv_alpha + text_color[2] * alpha) / 255; // Blue
-               pixel[3] = std::min(255, pixel[3] + alpha); // Alpha
+               pixel[3] = (std::min)(255, pixel[3] + alpha); // Alpha
             }
          }
 
