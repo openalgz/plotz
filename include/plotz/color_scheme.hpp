@@ -18,15 +18,13 @@ namespace plotz
    {
       for (int i = 0; i < steps; ++i) {
          float ratio = float(i) / (steps - 1);
-         uint8_t r = uint8_t(c1[0] + ratio * (c2[0] - c1[0]));
-         uint8_t g = uint8_t(c1[1] + ratio * (c2[1] - c1[1]));
-         uint8_t b = uint8_t(c1[2] + ratio * (c2[2] - c1[2]));
-         uint8_t a = uint8_t(c1[3] + ratio * (c2[3] - c1[3]));
+         rgba color{uint8_t(c1[0] + ratio * (c2[0] - c1[0])), uint8_t(c1[1] + ratio * (c2[1] - c1[1])),
+                    uint8_t(c1[2] + ratio * (c2[2] - c1[2])), uint8_t(c1[3] + ratio * (c2[3] - c1[3]))};
          const auto ix = i * 4;
-         colors[ix] = r;
-         colors[ix + 1] = g;
-         colors[ix + 2] = b;
-         colors[ix + 3] = a;
+         colors[ix] = color[0];
+         colors[ix + 1] = color[1];
+         colors[ix + 2] = color[2];
+         colors[ix + 3] = color[3];
       }
    }
 
