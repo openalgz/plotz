@@ -5,9 +5,65 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include <string>
+#include <stdexcept>
+#include <array>
+#include <format>
+#include <utility>
+#include <unordered_map>
+#include <memory>
 
 namespace plotz
 {
+   struct free_type_context {
+      std::shared_ptr<FT_Library> ft = []{
+         FT_Library* ft_lib = new FT_Library;
+         if (FT_Init_FreeType(ft_lib)) {
+            delete ft_lib; // Clean up if initialization fails
+            throw std::runtime_error("Could not initialize FreeType Library");
+         }
+         return std::shared_ptr<FT_Library>(ft_lib, [](FT_Library* ft){
+            if (ft) {
+               FT_Done_FreeType(*ft);
+               delete ft;
+               ft = nullptr;
+            }
+         });
+      }();
+      
+      std::unordered_map<std::string, std::shared_ptr<FT_Face>> faces; // font name to font faces
+
+      // Load and register a font face
+      void register_font(const std::string& font_filename) {
+         if (faces.find(font_filename) == faces.end()) {
+            FT_Face* face = new FT_Face;
+            if (FT_New_Face(*ft, font_filename.c_str(), 0, face)) {
+               delete face; // Clean up if face creation fails
+               throw std::runtime_error(std::format("Failed to load font: {}", font_filename));
+            }
+            faces[font_filename] = std::shared_ptr<FT_Face>(face, [](FT_Face* face){
+               if (face) {
+                  FT_Done_Face(*face);
+                  delete face;
+                  face = nullptr;
+               }
+            });
+         }
+      }
+
+      // Get a font face by filename
+      FT_Face get_font(const std::string& font_filename) {
+         auto it = faces.find(font_filename);
+         if (it == faces.end()) {
+            throw std::runtime_error(std::format("Font not registered: {}", font_filename));
+         }
+         return *(it->second); // Dereference shared_ptr to return FT_Face
+      }
+   };
+
+   // Inline global instance of FreeTypeContext
+   inline free_type_context ft_context;
+
    inline std::pair<int, int> calculate_text_dimensions(FT_Face face, const std::string& text)
    {
       int width = 0;
@@ -43,18 +99,11 @@ namespace plotz
                                     const std::array<uint8_t, 4>& text_color = {} // (RGB) alpha is ignored
    )
    {
-      // Initialize FreeType library
-      FT_Library ft;
-      if (FT_Init_FreeType(&ft)) {
-         throw std::runtime_error("Could not initialize FreeType Library");
-      }
+      // Register the font if not already done
+      ft_context.register_font(font_filename);
 
-      // Load the font face
-      FT_Face face;
-      if (FT_New_Face(ft, font_filename.c_str(), 0, &face)) {
-         FT_Done_FreeType(ft);
-         throw std::runtime_error(std::format("Failed to load font: {}", font_filename));
-      }
+      // Get the font face for rendering
+      FT_Face face = ft_context.get_font(font_filename);
 
       // Step 1: Determine the font size based on font_size_percentage
       // Ensure the percentage is reasonable (e.g., between 1% and 100%)
@@ -81,8 +130,6 @@ namespace plotz
       for (char c : text) {
          // Load character glyph
          if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
-            FT_Done_Face(face);
-            FT_Done_FreeType(ft);
             throw std::runtime_error(std::format("Failed to load Glyph for character: {}", c));
          }
 
@@ -122,9 +169,5 @@ namespace plotz
          pen_x += g->advance.x >> 6; // Convert from 1/64th pixels to pixels
          pen_y += g->advance.y >> 6;
       }
-
-      // Clean up FreeType resources
-      FT_Done_Face(face);
-      FT_Done_FreeType(ft);
    }
 }
