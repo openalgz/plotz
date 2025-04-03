@@ -150,6 +150,38 @@ namespace plotz
             return colorbuf; // Return transparent buffer for empty color scheme
          }
 
+         // Determine if we need to map multiple bins per pixel or multiple pixels per bin
+         if (num_bins <= width) {
+            // Case 1: Fewer bins than pixels (each bin gets one or more pixels)
+            render_bins_to_pixels(colors, saturation, colorbuf, ncolors);
+         }
+         else {
+            // Case 2: More bins than pixels (multiple bins map to the same pixel)
+            render_pixels_from_bins(colors, saturation, colorbuf, ncolors);
+         }
+
+         return colorbuf;
+      }
+
+      void reset() noexcept
+      {
+         std::fill(buffer.begin(), buffer.end(), 0.0f);
+         std::fill(peak_values.begin(), peak_values.end(), 0.0f);
+         max_magnitude = std::numeric_limits<float>::lowest();
+         min_magnitude = (std::numeric_limits<float>::max)();
+      }
+
+     private:
+      // Helper function to get color count from the color buffer
+      static size_t get_color_count(const std::vector<uint8_t>& colors) noexcept
+      {
+         return colors.size() / 4; // 4 bytes per color (RGBA)
+      }
+
+      // Render when there are fewer bins than pixels (expand bins to pixels)
+      void render_bins_to_pixels(const std::vector<uint8_t>& colors, float saturation, std::vector<uint8_t>& colorbuf,
+                                 size_t ncolors) const
+      {
          // Calculate the bin-to-pixel mapping parameters
          float bin_to_pixel_ratio = static_cast<float>(width) / num_bins;
 
@@ -165,10 +197,17 @@ namespace plotz
             uint32_t start_x = static_cast<uint32_t>(bin * bin_to_pixel_ratio);
             uint32_t end_x = static_cast<uint32_t>((bin + 1) * bin_to_pixel_ratio);
 
+            // Ensure we have at least one pixel per bin
+            if (start_x == end_x && end_x < width) {
+               end_x = start_x + 1;
+            }
+
             // Adjust for bar width factor
             if (bar_width_factor < 1.0f) {
-               uint32_t bar_width = static_cast<uint32_t>((end_x - start_x) * bar_width_factor);
-               uint32_t padding = (end_x - start_x - bar_width) / 2;
+               uint32_t full_width = end_x - start_x;
+               uint32_t bar_width = static_cast<uint32_t>(full_width * bar_width_factor);
+               if (bar_width == 0 && full_width > 0) bar_width = 1; // Ensure at least 1 pixel width
+               uint32_t padding = (full_width - bar_width) / 2;
                start_x += padding;
                end_x = start_x + bar_width;
             }
@@ -265,23 +304,152 @@ namespace plotz
                }
             }
          }
-
-         return colorbuf;
       }
 
-      void reset() noexcept
+      // Render when there are more bins than pixels (aggregate bins to pixels)
+      void render_pixels_from_bins(const std::vector<uint8_t>& colors, float saturation, std::vector<uint8_t>& colorbuf,
+                                   size_t ncolors) const
       {
-         std::fill(buffer.begin(), buffer.end(), 0.0f);
-         std::fill(peak_values.begin(), peak_values.end(), 0.0f);
-         max_magnitude = std::numeric_limits<float>::lowest();
-         min_magnitude = (std::numeric_limits<float>::max)();
-      }
+         // Create a temporary buffer to hold the maximum value for each pixel column
+         std::vector<float> pixel_values(width, 0.0f);
+         std::vector<float> pixel_peaks(width, 0.0f);
 
-     private:
-      // Helper function to get color count from the color buffer
-      static size_t get_color_count(const std::vector<uint8_t>& colors) noexcept
-      {
-         return colors.size() / 4; // 4 bytes per color (RGBA)
+         // Calculate the pixel-to-bin mapping parameters
+         float pixel_to_bin_ratio = static_cast<float>(num_bins) / width;
+
+         // For each pixel column, find the maximum value of all bins that map to it
+         for (uint32_t x = 0; x < width; ++x) {
+            // Calculate the bin range for this pixel
+            uint32_t start_bin = static_cast<uint32_t>(x * pixel_to_bin_ratio);
+            uint32_t end_bin = static_cast<uint32_t>((x + 1) * pixel_to_bin_ratio);
+
+            // Ensure we don't exceed buffer boundaries
+            end_bin = (std::min)(end_bin, num_bins);
+
+            // Find the maximum value among all bins that map to this pixel
+            float max_val = 0.0f;
+            float max_peak = 0.0f;
+
+            for (uint32_t bin = start_bin; bin < end_bin; ++bin) {
+               max_val = (std::max)(max_val, buffer[bin]);
+               max_peak = (std::max)(max_peak, peak_values[bin]);
+            }
+
+            pixel_values[x] = max_val;
+            pixel_peaks[x] = max_peak;
+         }
+
+         // Apply bar width factor if needed
+         if (bar_width_factor < 1.0f) {
+            // This is trickier with pixel-based rendering, but we'll skip pixels to create gaps
+            std::vector<float> adjusted_values(width, 0.0f);
+            std::vector<float> adjusted_peaks(width, 0.0f);
+
+            for (uint32_t x = 0; x < width; ++x) {
+               // Calculate if this pixel should be part of a bar or a gap
+               float relative_pos = static_cast<float>(x % 2) / 2.0f;
+               if (relative_pos <= bar_width_factor) {
+                  adjusted_values[x] = pixel_values[x];
+                  adjusted_peaks[x] = pixel_peaks[x];
+               }
+            }
+
+            pixel_values = std::move(adjusted_values);
+            pixel_peaks = std::move(adjusted_peaks);
+         }
+
+         // Now render each pixel column based on its maximum value
+         for (uint32_t x = 0; x < width; ++x) {
+            float val = pixel_values[x];
+            float peak_val = pixel_peaks[x];
+
+            // Normalize the values based on the maximum magnitude
+            float normalized = std::clamp(val / saturation, 0.0f, 1.0f);
+            float peak_normalized = std::clamp(peak_val / saturation, 0.0f, 1.0f);
+
+            // Calculate the height of this spectrum bar
+            uint32_t bar_height = static_cast<uint32_t>(normalized * height);
+
+            // Draw the vertical bar for this pixel column
+            switch (style) {
+            case bar_style::solid: {
+               // Determine the color index based on the normalized value
+               size_t color_idx = static_cast<size_t>((ncolors - 1) * normalized + 0.5f);
+               color_idx = (std::min)(color_idx, ncolors - 1);
+
+               // Draw a solid color bar
+               for (uint32_t y = 0; y < bar_height; ++y) {
+                  // Calculate position: y starts from bottom
+                  uint32_t pos_y = height - y - 1;
+                  size_t idx = static_cast<size_t>(pos_y) * width + x;
+
+                  // Set the pixel color
+                  std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
+               }
+               break;
+            }
+
+            case bar_style::gradient: {
+               // Draw a gradient bar
+               for (uint32_t y = 0; y < bar_height; ++y) {
+                  // Calculate position: y starts from bottom
+                  uint32_t pos_y = height - y - 1;
+                  size_t idx = static_cast<size_t>(pos_y) * width + x;
+
+                  // Map the y position to a color in the gradient
+                  float color_pos = static_cast<float>(y) / static_cast<float>(height);
+                  size_t color_idx = static_cast<size_t>((ncolors - 1) * color_pos + 0.5f);
+                  color_idx = (std::min)(color_idx, ncolors - 1);
+
+                  // Set the pixel color
+                  std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
+               }
+               break;
+            }
+
+            case bar_style::segmented: {
+               // Draw a segmented bar (like LED VU meters)
+               const uint32_t segment_count = 16; // Number of segments
+               const uint32_t segment_height = height / segment_count;
+               const float segment_value = 1.0f / segment_count;
+
+               for (uint32_t segment = 0; segment < segment_count; ++segment) {
+                  // Calculate if this segment should be lit
+                  float segment_threshold = segment * segment_value;
+                  if (normalized >= segment_threshold) {
+                     // Calculate segment position
+                     uint32_t start_y = height - (segment + 1) * segment_height;
+                     uint32_t end_y = height - segment * segment_height;
+
+                     // Determine segment color based on position
+                     float color_pos = static_cast<float>(segment) / static_cast<float>(segment_count - 1);
+                     size_t color_idx = static_cast<size_t>((ncolors - 1) * color_pos + 0.5f);
+                     color_idx = (std::min)(color_idx, ncolors - 1);
+
+                     // Draw the segment (leaving a small gap)
+                     for (uint32_t y = start_y + 1; y < end_y - 1; ++y) {
+                        size_t idx = static_cast<size_t>(y) * width + x;
+                        std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
+                     }
+                  }
+               }
+               break;
+            }
+            }
+
+            // Draw peak indicator if enabled
+            if (show_peaks && peak_normalized > 0.0f) {
+               // Calculate peak position
+               uint32_t peak_pos = height - static_cast<uint32_t>(peak_normalized * height) - 1;
+               if (peak_pos < height) {
+                  size_t idx = static_cast<size_t>(peak_pos) * width + x;
+
+                  // Use the highest color for peak indicator
+                  size_t color_idx = ncolors - 1;
+                  std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
+               }
+            }
+         }
       }
    };
 }

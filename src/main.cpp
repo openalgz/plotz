@@ -551,55 +551,120 @@ void spectrum_test_audio()
    return plotz::write_png("spectrum_audio.png", image.data(), w, h);
 }
 
-void spectrum_test_responsive()
+void spectrum_test_high_resolution()
 {
-   // Create the same 128-bin spectrum at three different display widths
-   static constexpr uint32_t bins = 128;
-   static constexpr uint32_t h = 200;
+   // Test with equal bins and width
+   static constexpr uint32_t bins = 1024; // 1K bins
+   static constexpr uint32_t w = 1024; // Output image width (equal to bins)
+   static constexpr uint32_t h = 512; // Output image height
 
-   // Create a spectrum with 128 bins
-   std::vector<float> magnitudes(bins);
+   // Create a spectrum plot instance
+   plotz::spectrum plot(bins, w, h);
 
-   // Generate a spectrum with some interesting features
+   // Set the style
+   plot.style = plotz::spectrum::bar_style::gradient;
+   plot.show_peaks = true;
+
+   // Create spectrum data with multiple frequency peaks
+   std::vector<float> magnitudes(bins, 0.0f);
+
+   // Generate a complex spectrum pattern
    for (uint32_t i = 0; i < bins; ++i) {
-      float x = static_cast<float>(i) / bins;
+      float normalized_freq = static_cast<float>(i) / bins;
 
-      // Create a multi-peak spectrum
-      magnitudes[i] = 0.0f;
-      magnitudes[i] += 0.9f * std::exp(-50.0f * std::pow(x - 0.1f, 2.0f)); // First peak
-      magnitudes[i] += 0.7f * std::exp(-50.0f * std::pow(x - 0.3f, 2.0f)); // Second peak
-      magnitudes[i] += 0.5f * std::exp(-50.0f * std::pow(x - 0.5f, 2.0f)); // Third peak
-      magnitudes[i] += 0.3f * std::exp(-50.0f * std::pow(x - 0.7f, 2.0f)); // Fourth peak
-      magnitudes[i] += 0.2f * std::exp(-50.0f * std::pow(x - 0.9f, 2.0f)); // Fifth peak
+      // Create a pattern with multiple frequency components
+      float val = 0.0f;
+
+      // Main peaks
+      val += 1.0f * std::exp(-200.0f * std::pow(normalized_freq - 0.1f, 2.0f));
+      val += 0.8f * std::exp(-200.0f * std::pow(normalized_freq - 0.3f, 2.0f));
+      val += 0.6f * std::exp(-200.0f * std::pow(normalized_freq - 0.5f, 2.0f));
+      val += 0.4f * std::exp(-200.0f * std::pow(normalized_freq - 0.7f, 2.0f));
+      val += 0.2f * std::exp(-200.0f * std::pow(normalized_freq - 0.9f, 2.0f));
+
+      // Add some fine details
+      val += 0.05f * std::sin(normalized_freq * 100.0f);
+
+      magnitudes[i] = val;
    }
 
-   // Different widths to demonstrate responsive rendering
-   uint32_t widths[] = {512, 1024, 2048};
+   // Update the spectrum
+   plot.update(magnitudes);
 
-   for (uint32_t i = 0; i < 3; ++i) {
-      uint32_t w = widths[i];
+   // Render the spectrum
+   std::vector<uint8_t> image = plot.render(plotz::make_color_scheme(plotz::jet_key_colors));
 
-      // Create a spectrum plot with this width
-      plotz::spectrum plot(bins, w, h);
-      plot.style = plotz::spectrum::bar_style::solid;
-      plot.show_peaks = true;
-      plot.bar_width_factor = 0.8f;
+   // Add text label to the image
+   std::string text = std::format("High Resolution Spectrum: {} bins, {}x{} pixels", bins, w, h);
+   std::string font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
+   float font_percent = 2.5f;
 
-      // Update and render the spectrum
-      plot.update(magnitudes);
-      std::vector<uint8_t> image = plot.render();
+   plotz::render_text_to_image(image.data(), w, h, text, font_filename, font_percent);
 
-      // Add a label showing the dimensions
-      std::string text = std::format("Spectrum: {} bins, {}x{} pixels", bins, w, h);
-      std::string font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
-      float font_percent = 3.0f;
+   // Save the image
+   return plotz::write_png("spectrum_high_resolution.png", image.data(), w, h);
+}
 
-      plotz::render_text_to_image(image.data(), w, h, text, font_filename, font_percent);
+void spectrum_test_more_bins_than_pixels()
+{
+   // Test with more bins than pixels (common for FFT visualization)
+   static constexpr uint32_t bins = 8192; // 8K bins (much higher than pixel width)
+   static constexpr uint32_t w = 1024; // Output image width
+   static constexpr uint32_t h = 512; // Output image height
 
-      // Save the image
-      std::string filename = std::format("spectrum_responsive_{}.png", w);
-      plotz::write_png(filename.c_str(), image.data(), w, h);
+   // Create a spectrum plot instance
+   plotz::spectrum plot(bins, w, h);
+
+   // Set the style
+   plot.style = plotz::spectrum::bar_style::gradient;
+   plot.show_peaks = true;
+
+   // Create spectrum data
+   std::vector<float> magnitudes(bins, 0.0f);
+
+   // Generate a complex spectrum pattern with fine detail
+   for (uint32_t i = 0; i < bins; ++i) {
+      float normalized_freq = static_cast<float>(i) / bins;
+
+      // Create a pattern with multiple frequency components
+      float val = 0.0f;
+
+      // Main envelope (overall shape of the spectrum)
+      val += 0.5f * (1.0f - normalized_freq) * (1.0f - normalized_freq); // Higher at low frequencies
+
+      // Add peaks at various frequencies
+      for (int p = 1; p <= 20; ++p) {
+         float peak_freq = p / 21.0f;
+         float peak_width = 0.002f;
+         val += (1.0f / p) * std::exp(-std::pow((normalized_freq - peak_freq) / peak_width, 2.0f));
+      }
+
+      // Add some fine harmonic structure (will be aggregated in the final visualization)
+      for (int h = 1; h <= 50; ++h) {
+         float harmonic_freq = h / 50.0f;
+         if (std::fabs(normalized_freq - harmonic_freq) < 0.001f) {
+            val += 0.2f / h;
+         }
+      }
+
+      magnitudes[i] = val;
    }
+
+   // Update the spectrum
+   plot.update(magnitudes);
+
+   // Render the spectrum
+   std::vector<uint8_t> image = plot.render(plotz::make_color_scheme(plotz::viridis_key_colors));
+
+   // Add text label to the image
+   std::string text = std::format("Detailed Spectrum: {} bins rendered to {} pixels", bins, w);
+   std::string font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
+   float font_percent = 2.5f;
+
+   plotz::render_text_to_image(image.data(), w, h, text, font_filename, font_percent);
+
+   // Save the image
+   return plotz::write_png("spectrum_more_bins_than_pixels.png", image.data(), w, h);
 }
 
 // Update the main function to call the new test functions
@@ -611,9 +676,10 @@ int main()
    magnitude_mapped_test();
    magnitude_mapped_shrink_test();
 
-   // Add our new spectrum tests
+   // Add our spectrum tests
    spectrum_test_sine();
    spectrum_test_complex();
    spectrum_test_audio();
-   spectrum_test_responsive();
+   spectrum_test_high_resolution();
+   spectrum_test_more_bins_than_pixels();
 }
