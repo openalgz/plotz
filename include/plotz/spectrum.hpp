@@ -21,12 +21,7 @@ namespace plotz
       };
 
       spectrum(uint32_t bins_in, uint32_t width_in, uint32_t height_in) noexcept
-         : num_bins(bins_in),
-           width(width_in),
-           height(height_in),
-           buffer(bins_in, 0.0f),
-           peak_values(bins_in, 0.0f),
-           prev_buffer(bins_in, 0.0f)
+         : num_bins(bins_in), width(width_in), height(height_in), buffer(bins_in, 0.0f), peak_values(bins_in, 0.0f)
       {}
 
       spectrum(const spectrum&) noexcept = default;
@@ -40,10 +35,8 @@ namespace plotz
       float min_magnitude = (std::numeric_limits<float>::max)(); // Minimum magnitude value
       std::vector<float> buffer; // Buffer to store magnitude values (1D array of bins)
       std::vector<float> peak_values; // Buffer to store peak values
-      std::vector<float> prev_buffer; // Buffer to store previous values for smoothing
 
-      bar_style style = bar_style::gradient; // Default to gradient style
-      float smoothing_factor = 0.3f; // 0 = no smoothing, 1 = maximum smoothing
+      bar_style style = bar_style::solid; // Default to solid style
       float peak_decay = 0.05f; // Rate at which peaks decay (0 = no decay)
       bool show_peaks = true; // Whether to show peak indicators
       float bar_width_factor = 0.8f; // Width of bars relative to bin spacing (0-1)
@@ -53,17 +46,8 @@ namespace plotz
       {
          const size_t size = (std::min)(num_bins, static_cast<uint32_t>(magnitudes.size()));
 
-         // Store current buffer for smoothing
-         prev_buffer = buffer;
-
          for (size_t i = 0; i < size; ++i) {
             float magnitude_value = magnitudes[i];
-
-            // Apply smoothing if enabled
-            if (smoothing_factor > 0.0f && smoothing_factor < 1.0f) {
-               magnitude_value = prev_buffer[i] * smoothing_factor + magnitude_value * (1.0f - smoothing_factor);
-            }
-
             buffer[i] = magnitude_value;
 
             // Update max_magnitude
@@ -94,11 +78,6 @@ namespace plotz
       void update_bin(uint32_t bin, float magnitude_value) noexcept
       {
          if (bin >= num_bins) return; // Ignore if outside buffer
-
-         // Apply smoothing if enabled
-         if (smoothing_factor > 0.0f && smoothing_factor < 1.0f) {
-            magnitude_value = buffer[bin] * smoothing_factor + magnitude_value * (1.0f - smoothing_factor);
-         }
 
          buffer[bin] = magnitude_value;
 
@@ -294,7 +273,6 @@ namespace plotz
       {
          std::fill(buffer.begin(), buffer.end(), 0.0f);
          std::fill(peak_values.begin(), peak_values.end(), 0.0f);
-         std::fill(prev_buffer.begin(), prev_buffer.end(), 0.0f);
          max_magnitude = std::numeric_limits<float>::lowest();
          min_magnitude = (std::numeric_limits<float>::max)();
       }

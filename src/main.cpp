@@ -459,7 +459,6 @@ void spectrum_test_complex()
    // Set the style
    plot.style = plotz::spectrum::bar_style::solid;
    plot.show_peaks = true;
-   plot.smoothing_factor = 0.0f; // No smoothing for this example
    plot.bar_width_factor = 0.9f; // Slightly narrower bars
 
    // Create a more complex spectrum with multiple frequencies
@@ -582,7 +581,7 @@ void spectrum_test_responsive()
 
       // Create a spectrum plot with this width
       plotz::spectrum plot(bins, w, h);
-      plot.style = plotz::spectrum::bar_style::gradient;
+      plot.style = plotz::spectrum::bar_style::solid;
       plot.show_peaks = true;
       plot.bar_width_factor = 0.8f;
 
