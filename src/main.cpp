@@ -411,7 +411,7 @@ void spectrum_test_sine()
    plotz::spectrum plot(w, h);
    
    // Set the style
-   plot.style = plotz::spectrum::bar_style::gradient;
+   plot.style = plotz::spectrum::bar_style::solid;
    plot.show_peaks = true;
    
    // Create a simple spectrum with a single frequency spike
