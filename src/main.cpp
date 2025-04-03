@@ -404,150 +404,203 @@ void magnitude_mapped_shrink_test()
 
 void spectrum_test_sine()
 {
-   static constexpr uint32_t w = 1024;   // Number of frequency bins
-   static constexpr uint32_t h = 512;   // Height of the visualization
-   
-   // Create a spectrum plot instance
-   plotz::spectrum plot(w, h);
-   
+   static constexpr uint32_t bins = 256; // Number of frequency bins
+   static constexpr uint32_t w = 800; // Width of the visualization
+   static constexpr uint32_t h = 300; // Height of the visualization
+
+   // Create a spectrum plot instance with separate bin count and display width
+   plotz::spectrum plot(bins, w, h);
+
    // Set the style
-   plot.style = plotz::spectrum::bar_style::solid;
+   plot.style = plotz::spectrum::bar_style::gradient;
    plot.show_peaks = true;
-   
+   plot.bar_width_factor = 0.8f; // Make bars slightly narrower than bin width
+
    // Create a simple spectrum with a single frequency spike
-   std::vector<float> magnitudes(w, 0.0f);
-   
-   // Add a peak at bin 128 (simulating a sine wave)
-   uint32_t peak_bin = 128;
+   std::vector<float> magnitudes(bins, 0.0f);
+
+   // Add a peak at bin 64 (simulating a sine wave)
+   uint32_t peak_bin = 64;
    magnitudes[peak_bin] = 1.0f;
-   
+
    // Add some smaller values around the peak to simulate spectral leakage
    for (int i = 1; i <= 10; ++i) {
-      if (peak_bin - i >= 0)
-         magnitudes[peak_bin - i] = 1.0f / (i * i);
-      
-      if (peak_bin + i < w)
-         magnitudes[peak_bin + i] = 1.0f / (i * i);
+      if (peak_bin - i >= 0) magnitudes[peak_bin - i] = 1.0f / (i * i);
+
+      if (peak_bin + i < bins) magnitudes[peak_bin + i] = 1.0f / (i * i);
    }
-   
+
    // Update the spectrum with the magnitudes
    plot.update(magnitudes);
-   
+
    // Render the spectrum to an image buffer
    std::vector<uint8_t> image = plot.render();
-   
+
    // Add text label to the image
    std::string text = "Single Frequency Spectrum";
    std::string font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
    float font_percent = 3.0f;
-   
+
    plotz::render_text_to_image(image.data(), w, h, text, font_filename, font_percent);
-   
+
    // Save the image using libpng
    return plotz::write_png("spectrum_sine.png", image.data(), w, h);
 }
 
 void spectrum_test_complex()
 {
-   static constexpr uint32_t w = 1024;   // Number of frequency bins
-   static constexpr uint32_t h = 512;   // Height of the visualization
-   
-   // Create a spectrum plot instance
-   plotz::spectrum plot(w, h);
-   
+   static constexpr uint32_t bins = 256; // Number of frequency bins
+   static constexpr uint32_t w = 1024; // Width of the visualization
+   static constexpr uint32_t h = 256; // Height of the visualization
+
+   // Create a spectrum plot instance with separate bin count and display width
+   plotz::spectrum plot(bins, w, h);
+
    // Set the style
    plot.style = plotz::spectrum::bar_style::solid;
    plot.show_peaks = true;
    plot.smoothing_factor = 0.0f; // No smoothing for this example
-   
+   plot.bar_width_factor = 0.9f; // Slightly narrower bars
+
    // Create a more complex spectrum with multiple frequencies
-   std::vector<float> magnitudes(w, 0.0f);
-   
+   std::vector<float> magnitudes(bins, 0.0f);
+
    // Add several frequency peaks
-   uint32_t peaks[] = {64, 128, 192, 256, 384};
+   uint32_t peaks[] = {32, 64, 96, 128, 192};
    float amplitudes[] = {0.5f, 1.0f, 0.7f, 0.3f, 0.8f};
-   
+
    for (int p = 0; p < 5; ++p) {
       uint32_t peak_bin = peaks[p];
       float amplitude = amplitudes[p];
-      
+
       magnitudes[peak_bin] = amplitude;
-      
+
       // Add some smaller values around the peak
       for (int i = 1; i <= 5; ++i) {
-         if (peak_bin - i >= 0)
-            magnitudes[peak_bin - i] = amplitude / (i * i);
-         
-         if (peak_bin + i < w)
-            magnitudes[peak_bin + i] = amplitude / (i * i);
+         if (peak_bin - i >= 0) magnitudes[peak_bin - i] = amplitude / (i * i);
+
+         if (peak_bin + i < bins) magnitudes[peak_bin + i] = amplitude / (i * i);
       }
    }
-   
+
    // Update the spectrum with the magnitudes
    plot.update(magnitudes);
-   
+
    // Render the spectrum to an image buffer using a different color scheme
    std::vector<uint8_t> image = plot.render(plotz::make_color_scheme(plotz::inferno_key_colors));
-   
+
    // Add text label to the image
    std::string text = "Multi-Frequency Spectrum";
    std::string font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
    float font_percent = 3.0f;
-   
+
    plotz::render_text_to_image(image.data(), w, h, text, font_filename, font_percent);
-   
+
    // Save the image using libpng
    return plotz::write_png("spectrum_complex.png", image.data(), w, h);
 }
 
 void spectrum_test_audio()
 {
-   static constexpr uint32_t w = 1024;   // Number of frequency bins
-   static constexpr uint32_t h = 512;   // Height of the visualization
-   
-   // Create a spectrum plot instance
-   plotz::spectrum plot(w, h);
-   
+   static constexpr uint32_t bins = 128; // Number of frequency bins (typical for audio)
+   static constexpr uint32_t w = 1280; // Width of the visualization (10 pixels per bin)
+   static constexpr uint32_t h = 320; // Height of the visualization
+
+   // Create a spectrum plot instance with separate bin count and display width
+   plotz::spectrum plot(bins, w, h);
+
    // Set the style to the LED-style segmented display
    plot.style = plotz::spectrum::bar_style::segmented;
    plot.show_peaks = true;
-   
+   plot.bar_width_factor = 0.7f; // Narrower bars with more space between them
+
    // Create a realistic audio spectrum shape
-   std::vector<float> magnitudes(w);
-   
+   std::vector<float> magnitudes(bins);
+
    // Generate an audio-like spectrum (pink noise-like distribution)
-   for (uint32_t i = 0; i < w; ++i) {
+   for (uint32_t i = 0; i < bins; ++i) {
       // Create a curve that falls off at higher frequencies (pink noise)
-      float x = static_cast<float>(i) / w;
-      
+      float x = static_cast<float>(i) / bins;
+
       // Base curve (1/f distribution)
       float pink_noise = 1.0f / (1.0f + 10.0f * x);
-      
+
       // Add some "music-like" resonances
       float resonances = 0.0f;
-      resonances += 0.8f * std::exp(-20.0f * std::pow(x - 0.1f, 2.0f));  // Bass peak
-      resonances += 0.6f * std::exp(-20.0f * std::pow(x - 0.3f, 2.0f));  // Mid peak
-      resonances += 0.4f * std::exp(-30.0f * std::pow(x - 0.7f, 2.0f));  // High peak
-      
+      resonances += 0.8f * std::exp(-20.0f * std::pow(x - 0.1f, 2.0f)); // Bass peak
+      resonances += 0.6f * std::exp(-20.0f * std::pow(x - 0.3f, 2.0f)); // Mid peak
+      resonances += 0.4f * std::exp(-30.0f * std::pow(x - 0.7f, 2.0f)); // High peak
+
       // Combine the pink noise and resonances
       magnitudes[i] = 0.5f * pink_noise + 0.5f * resonances;
    }
-   
+
    // Update the spectrum
    plot.update(magnitudes);
-   
+
    // Render the spectrum using an alternate color scheme
    std::vector<uint8_t> image = plot.render(plotz::make_color_scheme(plotz::temperature_key_colors));
-   
+
    // Add text label to the image
    std::string text = "Audio Spectrum Analyzer";
    std::string font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
    float font_percent = 3.0f;
-   
+
    plotz::render_text_to_image(image.data(), w, h, text, font_filename, font_percent);
-   
+
    // Save the image
    return plotz::write_png("spectrum_audio.png", image.data(), w, h);
+}
+
+void spectrum_test_responsive()
+{
+   // Create the same 128-bin spectrum at three different display widths
+   static constexpr uint32_t bins = 128;
+   static constexpr uint32_t h = 200;
+
+   // Create a spectrum with 128 bins
+   std::vector<float> magnitudes(bins);
+
+   // Generate a spectrum with some interesting features
+   for (uint32_t i = 0; i < bins; ++i) {
+      float x = static_cast<float>(i) / bins;
+
+      // Create a multi-peak spectrum
+      magnitudes[i] = 0.0f;
+      magnitudes[i] += 0.9f * std::exp(-50.0f * std::pow(x - 0.1f, 2.0f)); // First peak
+      magnitudes[i] += 0.7f * std::exp(-50.0f * std::pow(x - 0.3f, 2.0f)); // Second peak
+      magnitudes[i] += 0.5f * std::exp(-50.0f * std::pow(x - 0.5f, 2.0f)); // Third peak
+      magnitudes[i] += 0.3f * std::exp(-50.0f * std::pow(x - 0.7f, 2.0f)); // Fourth peak
+      magnitudes[i] += 0.2f * std::exp(-50.0f * std::pow(x - 0.9f, 2.0f)); // Fifth peak
+   }
+
+   // Different widths to demonstrate responsive rendering
+   uint32_t widths[] = {512, 1024, 2048};
+
+   for (uint32_t i = 0; i < 3; ++i) {
+      uint32_t w = widths[i];
+
+      // Create a spectrum plot with this width
+      plotz::spectrum plot(bins, w, h);
+      plot.style = plotz::spectrum::bar_style::gradient;
+      plot.show_peaks = true;
+      plot.bar_width_factor = 0.8f;
+
+      // Update and render the spectrum
+      plot.update(magnitudes);
+      std::vector<uint8_t> image = plot.render();
+
+      // Add a label showing the dimensions
+      std::string text = std::format("Spectrum: {} bins, {}x{} pixels", bins, w, h);
+      std::string font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
+      float font_percent = 3.0f;
+
+      plotz::render_text_to_image(image.data(), w, h, text, font_filename, font_percent);
+
+      // Save the image
+      std::string filename = std::format("spectrum_responsive_{}.png", w);
+      plotz::write_png(filename.c_str(), image.data(), w, h);
+   }
 }
 
 // Update the main function to call the new test functions
@@ -558,9 +611,10 @@ int main()
    magnitude_test2();
    magnitude_mapped_test();
    magnitude_mapped_shrink_test();
-   
+
    // Add our new spectrum tests
    spectrum_test_sine();
    spectrum_test_complex();
    spectrum_test_audio();
+   spectrum_test_responsive();
 }
