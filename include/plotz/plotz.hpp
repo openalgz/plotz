@@ -36,4 +36,6 @@
 #include "plotz/magnitude.hpp"
 #include "plotz/write_png.hpp"
 #include "plotz/render_text.hpp"
+#include "plotz/scales.hpp"
 #include "plotz/spectrum.hpp"
+#include "plotz/plot_traits.hpp"

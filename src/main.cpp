@@ -753,6 +753,249 @@ void spectrum_test_backgrounds()
    }
 }
 
+void spectrum_auto_scaled()
+{
+   static constexpr uint32_t bins = 2048;   // Number of frequency bins
+   static constexpr uint32_t w = 1200;      // Width of the visualization
+   static constexpr uint32_t h = 600;       // Height of the visualization
+   
+   // Create a spectrum plot with very detailed data
+   plotz::spectrum plot(bins, w, h);
+   
+   // Set spectrum style
+   plot.style = plotz::spectrum::bar_style::gradient;
+   plot.show_peaks = true;
+   plot.set_background_color(plotz::black); // Use black background
+   
+   // Create frequency data using a more realistic pattern
+   std::vector<float> magnitudes(bins, 0.0f);
+   
+   // Generate audio spectrum-like data
+   float sample_rate = 44100.0f;  // Simulate 44.1kHz audio
+   float nyquist = sample_rate / 2.0f;
+   float bin_size = nyquist / bins;
+   
+   // Generate a pattern with harmonic series
+   const int num_harmonics = 12;
+   float fundamental_freq = 440.0f;  // A4 note
+   
+   for (uint32_t i = 0; i < bins; ++i) {
+      float frequency = i * bin_size;
+      float amplitude = 0.0f;
+      
+      // Add harmonics
+      for (int h = 1; h <= num_harmonics; ++h) {
+         float harmonic_freq = fundamental_freq * h;
+         float harmonic_width = 5.0f + (h * 2.0f);  // Wider for higher harmonics
+         
+         // Add a peak for this harmonic
+         amplitude += (1.0f / h) * std::exp(-std::pow((frequency - harmonic_freq) / harmonic_width, 2.0f));
+         
+         // Add some subharmonics too
+         if (h <= 3) {
+            harmonic_freq = fundamental_freq / h;
+            amplitude += (0.5f / h) * std::exp(-std::pow((frequency - harmonic_freq) / harmonic_width, 2.0f));
+         }
+      }
+      
+      // Add some noise floor
+      amplitude += 0.05f * ((float)rand() / RAND_MAX);
+      
+      magnitudes[i] = amplitude;
+   }
+   
+   // Update the spectrum
+   plot.update(magnitudes);
+   
+   // Create scales with automatic data ranges
+   plotz::scales scale_renderer(w, h);
+   plotz::scale_options options;
+   
+   // Basic visual setup
+   options.font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
+   options.color = {200, 200, 200, 255}; // Light gray for axes
+   options.text_color = {220, 220, 220, 255}; // Slightly lighter text
+   options.draw_grid_lines = true;
+   options.grid_line_alpha = 0.2f;
+   options.x_tick_count = 10;
+   options.y_tick_count = 5;
+   options.font_size_percentage = 2.0f;
+   
+   // Add axis labels
+   options.show_axis_labels = true;
+   options.x_label = "Frequency (Hz)";
+   options.y_label = "Amplitude";
+   
+   // Add a custom mapper function to convert bin indices to frequencies
+   options.x_mapper = [&](double bin) {
+      return (bin / bins) * nyquist;
+   };
+   
+   // Render the spectrum with automatic scales using our custom renderer
+   std::vector<uint8_t> image = scale_renderer.render_plot(plot, options);
+   
+   // Add a title
+   std::string title = "Auto-Scaled Audio Spectrum";
+   plotz::render_text_to_image(image.data(), w, h, title,
+                               FONTS_DIR "/RobotoMono-SemiBold.ttf", 3.5f, {255, 255, 255, 255});
+   
+   // Save the image
+   plotz::write_png("spectrum_auto_scaled.png", image.data(), w, h);
+}
+
+void magnitude_auto_scaled()
+{
+   static constexpr uint32_t w = 800, h = 800;
+   
+   // Create a magnitude plot
+   plotz::magnitude plot(w, h);
+   
+   // Generate a pattern with varying magnitudes
+   for (uint32_t y = 0; y < h; ++y) {
+      for (uint32_t x = 0; x < w; ++x) {
+         // Create a pattern of concentric rings with decreasing magnitude
+         float dx = x - w/2.0f;
+         float dy = y - h/2.0f;
+         float distance = std::sqrt(dx*dx + dy*dy);
+         
+         // Add some varying magnitudes
+         float ring_width = 20.0f;
+         float magnitude = std::exp(-std::pow(std::fmod(distance, ring_width) - (ring_width/2.0f), 2.0f) / 10.0f);
+         
+         // Make the magnitude decrease with distance from center
+         magnitude *= 1.0f - (distance / (w/2.0f));
+         
+         // Clamp to valid range
+         magnitude = std::max(0.0f, std::min(1.0f, magnitude));
+         
+         plot.add_point(x, y, magnitude);
+      }
+   }
+   
+   // Create scales with automatic data ranges
+   plotz::scales scale_renderer(w, h);
+   plotz::scale_options options;
+   
+   // Visual setup
+   options.font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
+   options.color = {0, 0, 0, 255}; // Black for axes
+   options.text_color = {0, 0, 0, 255}; // Black text
+   options.draw_grid_lines = true;
+   options.grid_line_alpha = 0.3f;
+   options.x_tick_count = 8;
+   options.y_tick_count = 8;
+   options.font_size_percentage = 2.0f;
+   
+   // Add axis labels
+   options.show_axis_labels = true;
+   options.x_label = "X Position";
+   options.y_label = "Y Position";
+   
+   // Use custom ranges to center around origin
+   options.x_min = -w/2.0;
+   options.x_max = w/2.0;
+   options.y_min = -h/2.0;
+   options.y_max = h/2.0;
+   
+   // Map image coordinates to our custom coordinate system
+   options.x_mapper = [&](double x) { return x - w/2.0; };
+   options.y_mapper = [&](double y) { return h/2.0 - y; };
+   
+   // Render with automatic scales
+   std::vector<uint8_t> image = scale_renderer.render_plot(plot, options);
+   
+   // Save the image
+   plotz::write_png("magnitude_auto_scaled.png", image.data(), w, h);
+}
+
+void heatmap_with_frequency_scales()
+{
+   static constexpr uint32_t w = 1024, h = 512;
+   
+   // Create a heatmap plot
+   plotz::heatmap hm(w, h);
+   
+   // Simulate a spectrogram (time-frequency plot)
+   float time_duration = 10.0f; // 10 seconds
+   float max_freq = 8000.0f;    // 8 kHz max frequency
+   
+   // Generate a pattern that looks like an audio spectrogram
+   for (uint32_t y = 0; y < h; ++y) {
+      // Convert y to frequency (lower y = higher frequency in spectrograms)
+      float freq = max_freq * (1.0f - (float)y / h);
+      
+      for (uint32_t x = 0; x < w; ++x) {
+         // Convert x to time
+         float time = time_duration * (float)x / w;
+         
+         // Create some interesting patterns
+         // 1. A chirp (sweep)
+         float chirp_freq = 500.0f + 3000.0f * (time / time_duration);
+         float chirp = std::exp(-std::pow((freq - chirp_freq) / 50.0f, 2.0f));
+         
+         // 2. Some harmonics
+         float harmonic_base = 300.0f;
+         float harmonics = 0.0f;
+         for (int i = 1; i <= 5; ++i) {
+            harmonics += (1.0f / i) * std::exp(-std::pow((freq - i * harmonic_base) / 30.0f, 2.0f));
+         }
+         
+         // Combine and modulate over time
+         float intensity = chirp * std::sin(time * 2.0f) + harmonics * (0.5f + 0.5f * std::sin(time * 0.5f));
+         
+         // Add points with higher intensity
+         if (intensity > 0.3f) {
+            // Add multiple points for higher intensity
+            int count = static_cast<int>(intensity * 20.0f);
+            for (int i = 0; i < count; ++i) {
+               hm.add_point(x, y);
+            }
+         }
+      }
+   }
+   
+   // Create scales with appropriate labels
+   plotz::scales scale_renderer(w, h);
+   plotz::scale_options options;
+   
+   // Visual setup
+   options.font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
+   options.color = {255, 255, 255, 255}; // White for axes
+   options.text_color = {255, 255, 255, 255}; // White text
+   options.draw_grid_lines = true;
+   options.grid_line_alpha = 0.3f;
+   options.x_tick_count = 10;
+   options.y_tick_count = 8;
+   options.font_size_percentage = 2.0f;
+   
+   // Add axis labels
+   options.show_axis_labels = true;
+   options.x_label = "Time (s)";
+   options.y_label = "Frequency (Hz)";
+   
+   // Use custom ranges and mappers
+   options.x_min = 0.0;
+   options.x_max = time_duration;
+   options.y_min = 0.0;
+   options.y_max = max_freq;
+   
+   // Map coordinates
+   options.x_mapper = [&](double x) {
+      return (x / w) * time_duration;
+   };
+   
+   options.y_mapper = [&](double y) {
+      return max_freq * (1.0 - (y / h));
+   };
+   
+   // Render with scales
+   std::vector<uint8_t> image = hm.render();
+   scale_renderer.render(image.data(), options);
+   
+   // Save the image
+   plotz::write_png("spectrogram_with_scales.png", image.data(), w, h);
+}
+
 // Update the main function to call the new test functions
 int main()
 {
@@ -762,11 +1005,16 @@ int main()
    magnitude_mapped_test();
    magnitude_mapped_shrink_test();
 
-   // Add our spectrum tests
+   // Spectrum tests
    spectrum_test_sine();
    spectrum_test_complex();
    spectrum_test_audio();
    spectrum_test_high_resolution();
    spectrum_test_more_bins_than_pixels();
    spectrum_test_backgrounds();
+   
+   // Auto-scaling examples
+   spectrum_auto_scaled();
+   magnitude_auto_scaled();
+   heatmap_with_frequency_scales();
 }
