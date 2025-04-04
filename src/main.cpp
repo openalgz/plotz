@@ -667,6 +667,92 @@ void spectrum_test_more_bins_than_pixels()
    return plotz::write_png("spectrum_more_bins_than_pixels.png", image.data(), w, h);
 }
 
+void spectrum_test_backgrounds()
+{
+   static constexpr uint32_t bins = 256; // Number of frequency bins
+   static constexpr uint32_t w = 1024; // Width of the visualization
+   static constexpr uint32_t h = 256; // Height of the visualization
+
+   // Create a complex spectrum with multiple frequencies
+   std::vector<float> magnitudes(bins, 0.0f);
+
+   // Generate a pattern with multiple harmonics
+   for (uint32_t i = 0; i < bins; ++i) {
+      float normalized_freq = static_cast<float>(i) / bins;
+
+      // Create a pattern with multiple frequency components
+      float val = 0.0f;
+
+      // Main peaks at different harmonics
+      for (int harmonic = 1; harmonic <= 8; ++harmonic) {
+         float peak_freq = 0.1f * harmonic;
+         if (peak_freq >= 1.0f) break; // Stay within Nyquist frequency
+
+         // Each harmonic is smaller than the previous one
+         float amplitude = 1.0f / harmonic;
+         val += amplitude * std::exp(-200.0f * std::pow(normalized_freq - peak_freq, 2.0f));
+      }
+
+      magnitudes[i] = val;
+   }
+
+   // Create and render with three different background colors
+
+   // 1. Default transparent background
+   {
+      plotz::spectrum plot(bins, w, h);
+      plot.style = plotz::spectrum::bar_style::gradient;
+      plot.show_peaks = true;
+      // Default is transparent - no need to set
+
+      plot.update(magnitudes);
+      std::vector<uint8_t> image = plot.render(plotz::make_color_scheme(plotz::viridis_key_colors));
+
+      std::string text = "Spectrum with Transparent Background";
+      std::string font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
+      float font_percent = 2.5f;
+
+      plotz::render_text_to_image(image.data(), w, h, text, font_filename, font_percent);
+      plotz::write_png("spectrum_transparent_bg.png", image.data(), w, h);
+   }
+
+   // 2. Black background
+   {
+      plotz::spectrum plot(bins, w, h);
+      plot.style = plotz::spectrum::bar_style::gradient;
+      plot.show_peaks = true;
+      plot.set_background_color(plotz::black);
+
+      plot.update(magnitudes);
+      std::vector<uint8_t> image = plot.render(plotz::make_color_scheme(plotz::viridis_key_colors));
+
+      std::string text = "Spectrum with Black Background";
+      std::string font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
+      float font_percent = 2.5f;
+
+      plotz::render_text_to_image(image.data(), w, h, text, font_filename, font_percent);
+      plotz::write_png("spectrum_black_bg.png", image.data(), w, h);
+   }
+
+   // 3. Custom dark blue background
+   {
+      plotz::spectrum plot(bins, w, h);
+      plot.style = plotz::spectrum::bar_style::gradient;
+      plot.show_peaks = true;
+      plot.set_background_color(10, 20, 40, 255); // Dark blue background
+
+      plot.update(magnitudes);
+      std::vector<uint8_t> image = plot.render(plotz::make_color_scheme(plotz::temperature_key_colors));
+
+      std::string text = "Spectrum with Dark Blue Background";
+      std::string font_filename = FONTS_DIR "/RobotoMono-SemiBold.ttf";
+      float font_percent = 2.5f;
+
+      plotz::render_text_to_image(image.data(), w, h, text, font_filename, font_percent);
+      plotz::write_png("spectrum_dark_blue_bg.png", image.data(), w, h);
+   }
+}
+
 // Update the main function to call the new test functions
 int main()
 {
@@ -682,4 +768,5 @@ int main()
    spectrum_test_audio();
    spectrum_test_high_resolution();
    spectrum_test_more_bins_than_pixels();
+   spectrum_test_backgrounds();
 }

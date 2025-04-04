@@ -12,6 +12,7 @@ namespace plotz
 
    inline constexpr rgba white{255, 255, 255, 255};
    inline constexpr rgba black{0, 0, 0, 255};
+   inline constexpr rgba transparent{0, 0, 0, 0};
 
    // colors must be allocated with a length of steps * 4
    inline void interpolate_color(uint8_t* colors, const rgba& c1, const rgba& c2, int steps) noexcept

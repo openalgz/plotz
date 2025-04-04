@@ -4,6 +4,7 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <vector>
@@ -21,7 +22,12 @@ namespace plotz
       };
 
       spectrum(uint32_t bins_in, uint32_t width_in, uint32_t height_in) noexcept
-         : num_bins(bins_in), width(width_in), height(height_in), buffer(bins_in, 0.0f), peak_values(bins_in, 0.0f)
+         : num_bins(bins_in),
+           width(width_in),
+           height(height_in),
+           buffer(bins_in, 0.0f),
+           peak_values(bins_in, 0.0f),
+           background_color{0, 0, 0, 0} // Default transparent background (alpha = 0)
       {}
 
       spectrum(const spectrum&) noexcept = default;
@@ -40,6 +46,20 @@ namespace plotz
       float peak_decay = 0.05f; // Rate at which peaks decay (0 = no decay)
       bool show_peaks = true; // Whether to show peak indicators
       float bar_width_factor = 0.8f; // Width of bars relative to bin spacing (0-1)
+
+      std::array<uint8_t, 4> background_color; // RGBA background color
+
+      // Set background color with separate R, G, B, A components
+      void set_background_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) noexcept
+      {
+         background_color = {r, g, b, a};
+      }
+
+      // Set background color with an rgba struct
+      void set_background_color(const rgba& color) noexcept
+      {
+         background_color = {color[0], color[1], color[2], color[3]};
+      }
 
       // Update the entire spectrum with new magnitude values
       void update(const std::vector<float>& magnitudes) noexcept
@@ -144,10 +164,20 @@ namespace plotz
 
          size_t total_pixels = static_cast<size_t>(width) * height;
          std::vector<uint8_t> colorbuf(total_pixels * 4, 0); // Assuming RGBA, initialize to transparent
+         
+         if (background_color != transparent) {
+            // Assign the background color
+            for (size_t i = 0; i < total_pixels; ++i) {
+               colorbuf[i * 4] = background_color[0]; // R
+               colorbuf[i * 4 + 1] = background_color[1]; // G
+               colorbuf[i * 4 + 2] = background_color[2]; // B
+               colorbuf[i * 4 + 3] = background_color[3]; // A
+            }
+         }
 
          size_t ncolors = get_color_count(colors);
          if (ncolors == 0) {
-            return colorbuf; // Return transparent buffer for empty color scheme
+            return colorbuf; // Return buffer with background color for empty color scheme
          }
 
          // Determine if we need to map multiple bins per pixel or multiple pixels per bin
