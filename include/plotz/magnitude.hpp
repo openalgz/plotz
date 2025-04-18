@@ -356,64 +356,66 @@ namespace plotz
    
    /**
     * @brief Class to manage a grid of magnitude_mapped plots with shared scaling
-    * @tparam GridSize Size of the grid (GridSize x GridSize)
     */
-   template <size_t GridSize>
    class magnitude_mapped_grid
    {
    private:
-      static constexpr size_t plot_count = GridSize * GridSize;
+      size_t grid_size_;       // Size of the grid (grid_size_ x grid_size_)
+      size_t plot_count_;      // Total number of plots
       
-      uint32_t input_width_;  // Width of each input plot
-      uint32_t input_height_; // Height of each input plot
-      uint32_t plot_width_;   // Width of each rendered plot
-      uint32_t plot_height_;  // Height of each rendered plot
+      uint32_t input_width_;   // Width of each input plot
+      uint32_t input_height_;  // Height of each input plot
+      uint32_t plot_width_;    // Width of each rendered plot
+      uint32_t plot_height_;   // Height of each rendered plot
       
       // Global magnitude extrema
       float global_max_magnitude_ = std::numeric_limits<float>::lowest();
       float global_min_magnitude_ = std::numeric_limits<float>::max();
       
-      // Vector of magnitude_mapped instances (GridSize x GridSize)
+      // Vector of magnitude_mapped instances
       std::vector<magnitude_mapped> plots_;
       
    public:
       /**
-       * @brief Constructor for magnitude_grid
+       * @brief Constructor for magnitude_mapped_grid
+       * @param grid_size Size of the grid (grid_size x grid_size)
        * @param input_width Width of each input plot
        * @param input_height Height of each input plot
        * @param plot_width Width of each rendered plot
        * @param plot_height Height of each rendered plot
        */
-      magnitude_mapped_grid(uint32_t input_width, uint32_t input_height,
-                     uint32_t plot_width, uint32_t plot_height)
-      : input_width_(input_width), input_height_(input_height),
+      magnitude_mapped_grid(size_t grid_size,
+                            uint32_t input_width, uint32_t input_height,
+                            uint32_t plot_width, uint32_t plot_height)
+      : grid_size_(grid_size), plot_count_(grid_size * grid_size),
+      input_width_(input_width), input_height_(input_height),
       plot_width_(plot_width), plot_height_(plot_height),
-      plots_(plot_count, magnitude_mapped(input_width, input_height, plot_width, plot_height))
+      plots_(plot_count_, magnitude_mapped(input_width, input_height, plot_width, plot_height))
       {
       }
       
       /**
        * @brief Get a reference to a specific plot in the grid
-       * @param row Row index (0 to GridSize-1)
-       * @param col Column index (0 to GridSize-1)
+       * @param row Row index (0 to grid_size_-1)
+       * @param col Column index (0 to grid_size_-1)
        * @return Reference to the requested magnitude_mapped instance
        */
       magnitude_mapped& get_plot(size_t row, size_t col) {
-         assert(row < GridSize && col < GridSize);
-         return plots_[row * GridSize + col];
+         assert(row < grid_size_ && col < grid_size_);
+         return plots_[row * grid_size_ + col];
       }
       
       /**
        * @brief Move a populated magnitude_mapped into the grid
-       * @param row Row index (0 to GridSize-1)
-       * @param col Column index (0 to GridSize-1)
+       * @param row Row index (0 to grid_size_-1)
+       * @param col Column index (0 to grid_size_-1)
        * @param plot The magnitude_mapped to move
        */
       void set_plot(size_t row, size_t col, magnitude_mapped&& plot) {
-         assert(row < GridSize && col < GridSize);
+         assert(row < grid_size_ && col < grid_size_);
          
          // Move the plot into the grid
-         plots_[row * GridSize + col] = std::move(plot);
+         plots_[row * grid_size_ + col] = std::move(plot);
          
          // Update global extrema after adding the new plot
          update_global_extrema();
@@ -421,17 +423,17 @@ namespace plotz
       
       /**
        * @brief Add a point to a specific plot
-       * @param row Row index of the plot (0 to GridSize-1)
-       * @param col Column index of the plot (0 to GridSize-1)
+       * @param row Row index of the plot (0 to grid_size_-1)
+       * @param col Column index of the plot (0 to grid_size_-1)
        * @param input_x X-coordinate in input space
        * @param input_y Y-coordinate in input space
        * @param magnitude_value Magnitude value to add
        */
       void add_point(size_t row, size_t col, uint32_t input_x, uint32_t input_y, float magnitude_value) {
-         assert(row < GridSize && col < GridSize);
+         assert(row < grid_size_ && col < grid_size_);
          
          // Add the point to the appropriate plot
-         auto& plot = plots_[row * GridSize + col];
+         auto& plot = plots_[row * grid_size_ + col];
          plot.add_point(input_x, input_y, magnitude_value);
          
          // Update global extrema
@@ -486,8 +488,8 @@ namespace plotz
          shift_all_buffers_to_non_negative();
          
          // Determine the combined image dimensions
-         uint32_t total_width = plot_width_ * GridSize;
-         uint32_t total_height = plot_height_ * GridSize;
+         size_t total_width = plot_width_ * grid_size_;
+         size_t total_height = plot_height_ * grid_size_;
          
          // Prepare the combined color buffer
          std::vector<uint8_t> combined_buffer(total_width * total_height * 4, 0);
@@ -496,10 +498,10 @@ namespace plotz
          float saturation = global_max_magnitude_ > 0.0f ? global_max_magnitude_ : 1.0f;
          
          // Render each plot and copy to the combined buffer
-         for (size_t row = 0; row < GridSize; ++row) {
-            for (size_t col = 0; col < GridSize; ++col) {
+         for (size_t row = 0; row < grid_size_; ++row) {
+            for (size_t col = 0; col < grid_size_; ++col) {
                // Get the plot
-               auto& plot = plots_[row * GridSize + col];
+               auto& plot = plots_[row * grid_size_ + col];
                
                // Render the plot with global saturation
                auto plot_buffer = plot.render_saturated(colors, saturation);
@@ -531,8 +533,8 @@ namespace plotz
        */
       void write_png(const std::string& filename, const std::vector<uint8_t>& colors) {
          auto buffer = render(colors);
-         uint32_t total_width = plot_width_ * GridSize;
-         uint32_t total_height = plot_height_ * GridSize;
+         size_t total_width = plot_width_ * grid_size_;
+         size_t total_height = plot_height_ * grid_size_;
          
          plotz::write_png(filename, buffer.data(), total_width, total_height);
       }

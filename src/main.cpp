@@ -426,7 +426,7 @@ int magnitude_grid_plot() {
    const uint32_t plot_size = 150;      // Size of each plot in the output image
    
    // Create an 8x8 grid
-   plotz::magnitude_mapped_grid<8> grid(input_size, input_size, plot_size, plot_size);
+   plotz::magnitude_mapped_grid grid(8, input_size, input_size, plot_size, plot_size);
    
    // Generate different spiral patterns for each plot in the grid
    for (size_t row = 0; row < 8; ++row) {
