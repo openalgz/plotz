@@ -402,6 +402,70 @@ void magnitude_mapped_shrink_test()
    return plotz::write_png("magnitude_mapped_shrink.png", image.data(), w, h);
 }
 
+// Function to plot spiral points onto a magnitude_mapped
+void plotSpiral(plotz::magnitude_mapped& plot, const std::vector<std::complex<float>>& spiralPoints, float intensity = 1.0f) {
+   // Initialize plot with zeros
+   plot.reset();
+   
+   // For each point in the spiral, add it to the plot
+   for (const auto& point : spiralPoints) {
+      int x = static_cast<int>(std::real(point));
+      int y = static_cast<int>(std::imag(point));
+      
+      // Make sure the point is within bounds
+      if (x >= 0 && x < static_cast<int>(plot.input_width) &&
+          y >= 0 && y < static_cast<int>(plot.input_height)) {
+         
+         plot.add_point(x, y, intensity);
+      }
+   }
+}
+
+int magnitude_grid_plot() {
+   const uint32_t input_size = 200;     // Size of input data
+   const uint32_t plot_size = 150;      // Size of each plot in the output image
+   
+   // Create an 8x8 grid
+   plotz::magnitude_mapped_grid<8> grid(input_size, input_size, plot_size, plot_size);
+   
+   // Generate different spiral patterns for each plot in the grid
+   for (size_t row = 0; row < 8; ++row) {
+      for (size_t col = 0; col < 8; ++col) {
+         auto& plot = grid.get_plot(row, col);
+         
+         // Vary parameters based on position in grid
+         size_t numPoints = 200 + (row * 100) + (col * 50);  // Points increase with row/col
+         float turns = 2.0f + (row * 0.5f) + (col * 0.25f); // Turns increase with row/col
+         
+         // Generate the spiral
+         auto spiralPoints = generateSpiral(input_size, input_size, int(numPoints), turns);
+         
+         // Plot the spiral
+         float intensity = 1.0f;
+         plotSpiral(plot, spiralPoints, intensity);
+      }
+   }
+   
+   // Create a colorful gradient scheme
+   std::vector<uint8_t> spiral_color_scheme = {
+      // Define a vibrant color gradient
+      20, 0, 100, 255,    // Deep blue
+      50, 0, 200, 255,    // Royal blue
+      0, 100, 255, 255,   // Azure
+      0, 200, 200, 255,   // Cyan
+      0, 255, 100, 255,   // Teal
+      100, 255, 0, 255,   // Green
+      200, 255, 0, 255,   // Chartreuse
+      255, 200, 0, 255,   // Yellow
+      255, 100, 0, 255,   // Orange
+      255, 0, 100, 255,   // Red
+      200, 0, 200, 255,   // Magenta
+   };
+   
+   // Render and save the grid as a PNG
+   grid.write_png("spiral_grid.png", spiral_color_scheme);
+}
+
 void spectrum_test_sine()
 {
    static constexpr uint32_t bins = 256; // Number of frequency bins
@@ -761,6 +825,7 @@ int main()
    magnitude_test2();
    magnitude_mapped_test();
    magnitude_mapped_shrink_test();
+   magnitude_grid_plot();
 
    // Add our spectrum tests
    spectrum_test_sine();
