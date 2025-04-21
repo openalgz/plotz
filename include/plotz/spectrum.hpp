@@ -44,7 +44,7 @@ namespace plotz
 
       bar_style style = bar_style::solid; // Default to solid style
       float peak_decay = 0.05f; // Rate at which peaks decay (0 = no decay)
-      bool show_peaks = true; // Whether to show peak indicators
+      bool show_peaks = false; // Whether to show peak indicators
       float bar_width_factor = 0.8f; // Width of bars relative to bin spacing (0-1)
 
       std::array<uint8_t, 4> background_color; // RGBA background color
