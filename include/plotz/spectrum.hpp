@@ -7,6 +7,7 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <cstring>
 #include <vector>
 
 #include "plotz/color_scheme.hpp"
@@ -164,7 +165,7 @@ namespace plotz
 
          size_t total_pixels = static_cast<size_t>(width) * height;
          std::vector<uint8_t> colorbuf(total_pixels * 4, 0); // Assuming RGBA, initialize to transparent
-         
+
          if (background_color != transparent) {
             // Assign the background color
             for (size_t i = 0; i < total_pixels; ++i) {
@@ -212,6 +213,28 @@ namespace plotz
       void render_bins_to_pixels(const std::vector<uint8_t>& colors, float saturation, std::vector<uint8_t>& colorbuf,
                                  size_t ncolors) const
       {
+         // Pre-calculate color indices for gradient style
+         std::vector<size_t> gradient_color_indices;
+         if (style == bar_style::gradient) {
+            gradient_color_indices.resize(height);
+            for (uint32_t y = 0; y < height; ++y) {
+               float color_pos = static_cast<float>(y) / static_cast<float>(height);
+               gradient_color_indices[y] = std::min(static_cast<size_t>((ncolors - 1) * color_pos + 0.5f), ncolors - 1);
+            }
+         }
+
+         // Pre-calculate segment color indices for segmented style
+         std::vector<size_t> segment_color_indices;
+         if (style == bar_style::segmented) {
+            const uint32_t segment_count = 16;
+            segment_color_indices.resize(segment_count);
+            for (uint32_t segment = 0; segment < segment_count; ++segment) {
+               float color_pos = static_cast<float>(segment) / static_cast<float>(segment_count - 1);
+               segment_color_indices[segment] =
+                  std::min(static_cast<size_t>((ncolors - 1) * color_pos + 0.5f), ncolors - 1);
+            }
+         }
+
          // Calculate the bin-to-pixel mapping parameters
          float bin_to_pixel_ratio = static_cast<float>(width) / num_bins;
 
@@ -248,14 +271,18 @@ namespace plotz
             // Calculate the height of this spectrum bar
             uint32_t bar_height = static_cast<uint32_t>(normalized * height);
 
+            // Pre-calculate color index for solid style
+            size_t solid_color_idx = 0;
+            if (style == bar_style::solid) {
+               solid_color_idx = std::min(static_cast<size_t>((ncolors - 1) * normalized + 0.5f), ncolors - 1);
+            }
+
             // Draw the vertical bar for each pixel in this bin's range
             for (uint32_t x = start_x; x < end_x; ++x) {
                // Draw based on selected style
                switch (style) {
                case bar_style::solid: {
-                  // Determine the color index based on the normalized value
-                  size_t color_idx = static_cast<size_t>((ncolors - 1) * normalized + 0.5f);
-                  color_idx = (std::min)(color_idx, ncolors - 1);
+                  // Use pre-calculated color index
 
                   // Draw a solid color bar
                   for (uint32_t y = 0; y < bar_height; ++y) {
@@ -263,8 +290,7 @@ namespace plotz
                      uint32_t pos_y = height - y - 1;
                      size_t idx = static_cast<size_t>(pos_y) * width + x;
 
-                     // Set the pixel color
-                     std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
+                     std::memcpy(&colorbuf[idx * 4], &colors[solid_color_idx * 4], 4);
                   }
                   break;
                }
@@ -275,14 +301,10 @@ namespace plotz
                      // Calculate position: y starts from bottom
                      uint32_t pos_y = height - y - 1;
                      size_t idx = static_cast<size_t>(pos_y) * width + x;
-
-                     // Map the y position to a color in the gradient
-                     float color_pos = static_cast<float>(y) / static_cast<float>(height);
-                     size_t color_idx = static_cast<size_t>((ncolors - 1) * color_pos + 0.5f);
-                     color_idx = (std::min)(color_idx, ncolors - 1);
+                     size_t color_idx = gradient_color_indices[y];
 
                      // Set the pixel color
-                     std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
+                     std::memcpy(&colorbuf[idx * 4], &colors[color_idx * 4], 4);
                   }
                   break;
                }
@@ -301,15 +323,12 @@ namespace plotz
                         uint32_t start_y = height - (segment + 1) * segment_height;
                         uint32_t end_y = height - segment * segment_height;
 
-                        // Determine segment color based on position
-                        float color_pos = static_cast<float>(segment) / static_cast<float>(segment_count - 1);
-                        size_t color_idx = static_cast<size_t>((ncolors - 1) * color_pos + 0.5f);
-                        color_idx = (std::min)(color_idx, ncolors - 1);
+                        size_t color_idx = segment_color_indices[segment];
 
                         // Draw the segment (leaving a small gap)
                         for (uint32_t y = start_y + 1; y < end_y - 1; ++y) {
                            size_t idx = static_cast<size_t>(y) * width + x;
-                           std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
+                           std::memcpy(&colorbuf[idx * 4], &colors[color_idx * 4], 4);
                         }
                      }
                   }
@@ -329,7 +348,7 @@ namespace plotz
 
                      // Use the highest color for peak indicator
                      size_t color_idx = ncolors - 1;
-                     std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
+                     std::memcpy(&colorbuf[idx * 4], &colors[color_idx * 4], 4);
                   }
                }
             }
@@ -340,6 +359,28 @@ namespace plotz
       void render_pixels_from_bins(const std::vector<uint8_t>& colors, float saturation, std::vector<uint8_t>& colorbuf,
                                    size_t ncolors) const
       {
+         // Pre-calculate color indices for gradient style
+         std::vector<size_t> gradient_color_indices;
+         if (style == bar_style::gradient) {
+            gradient_color_indices.resize(height);
+            for (uint32_t y = 0; y < height; ++y) {
+               float color_pos = static_cast<float>(y) / static_cast<float>(height);
+               gradient_color_indices[y] = std::min(static_cast<size_t>((ncolors - 1) * color_pos + 0.5f), ncolors - 1);
+            }
+         }
+
+         // Pre-calculate segment color indices for segmented style
+         std::vector<size_t> segment_color_indices;
+         if (style == bar_style::segmented) {
+            const uint32_t segment_count = 16;
+            segment_color_indices.resize(segment_count);
+            for (uint32_t segment = 0; segment < segment_count; ++segment) {
+               float color_pos = static_cast<float>(segment) / static_cast<float>(segment_count - 1);
+               segment_color_indices[segment] =
+                  std::min(static_cast<size_t>((ncolors - 1) * color_pos + 0.5f), ncolors - 1);
+            }
+         }
+
          // Create a temporary buffer to hold the maximum value for each pixel column
          std::vector<float> pixel_values(width, 0.0f);
          std::vector<float> pixel_peaks(width, 0.0f);
@@ -400,21 +441,22 @@ namespace plotz
             // Calculate the height of this spectrum bar
             uint32_t bar_height = static_cast<uint32_t>(normalized * height);
 
+            // Pre-calculate color index for solid style
+            size_t solid_color_idx = 0;
+            if (style == bar_style::solid) {
+               solid_color_idx = std::min(static_cast<size_t>((ncolors - 1) * normalized + 0.5f), ncolors - 1);
+            }
+
             // Draw the vertical bar for this pixel column
             switch (style) {
             case bar_style::solid: {
-               // Determine the color index based on the normalized value
-               size_t color_idx = static_cast<size_t>((ncolors - 1) * normalized + 0.5f);
-               color_idx = (std::min)(color_idx, ncolors - 1);
-
                // Draw a solid color bar
                for (uint32_t y = 0; y < bar_height; ++y) {
                   // Calculate position: y starts from bottom
                   uint32_t pos_y = height - y - 1;
                   size_t idx = static_cast<size_t>(pos_y) * width + x;
 
-                  // Set the pixel color
-                  std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
+                  std::memcpy(&colorbuf[idx * 4], &colors[solid_color_idx * 4], 4);
                }
                break;
             }
@@ -426,13 +468,11 @@ namespace plotz
                   uint32_t pos_y = height - y - 1;
                   size_t idx = static_cast<size_t>(pos_y) * width + x;
 
-                  // Map the y position to a color in the gradient
-                  float color_pos = static_cast<float>(y) / static_cast<float>(height);
-                  size_t color_idx = static_cast<size_t>((ncolors - 1) * color_pos + 0.5f);
-                  color_idx = (std::min)(color_idx, ncolors - 1);
+                  // Use the pre-calculated color index
+                  size_t color_idx = gradient_color_indices[y];
 
                   // Set the pixel color
-                  std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
+                  std::memcpy(&colorbuf[idx * 4], &colors[color_idx * 4], 4);
                }
                break;
             }
@@ -451,15 +491,12 @@ namespace plotz
                      uint32_t start_y = height - (segment + 1) * segment_height;
                      uint32_t end_y = height - segment * segment_height;
 
-                     // Determine segment color based on position
-                     float color_pos = static_cast<float>(segment) / static_cast<float>(segment_count - 1);
-                     size_t color_idx = static_cast<size_t>((ncolors - 1) * color_pos + 0.5f);
-                     color_idx = (std::min)(color_idx, ncolors - 1);
+                     size_t color_idx = segment_color_indices[segment];
 
                      // Draw the segment (leaving a small gap)
                      for (uint32_t y = start_y + 1; y < end_y - 1; ++y) {
                         size_t idx = static_cast<size_t>(y) * width + x;
-                        std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
+                        std::memcpy(&colorbuf[idx * 4], &colors[color_idx * 4], 4);
                      }
                   }
                }
@@ -476,7 +513,7 @@ namespace plotz
 
                   // Use the highest color for peak indicator
                   size_t color_idx = ncolors - 1;
-                  std::copy_n(colors.begin() + color_idx * 4, 4, colorbuf.begin() + idx * 4);
+                  std::memcpy(&colorbuf[idx * 4], &colors[color_idx * 4], 4);
                }
             }
          }
