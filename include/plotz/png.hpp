@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -165,10 +166,8 @@ void init_fixed_huffman_codes(void) {
 }
 
 // CRC table for faster CRC calculation
-static uint32_t crc_table[256];
-
-// Initialize the CRC table
-void init_crc_table(void) {
+inline constexpr std::array<uint32_t, 256> crc_table = []{
+   std::array<uint32_t, 256> crc_table;
    for (uint32_t i = 0; i < 256; i++) {
       uint32_t c = i;
       for (int j = 0; j < 8; j++) {
@@ -180,7 +179,8 @@ void init_crc_table(void) {
       }
       crc_table[i] = c;
    }
-}
+   return crc_table;
+}();
 
 // Calculate CRC for a byte array
 uint32_t calculate_crc(const uint8_t *data, size_t length) {
@@ -805,7 +805,6 @@ PNGChunk* create_idat_chunk(const uint8_t *filtered_data, size_t filtered_data_s
 // Encode a PNG image
 bool encode_png(const PNGImage *image, const char *filename) {
    // Initialize tables
-   init_crc_table();
    init_fixed_huffman_codes();
    
    // Open output file
