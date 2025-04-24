@@ -421,7 +421,7 @@ void plotSpiral(plotz::magnitude_mapped& plot, const std::vector<std::complex<fl
    }
 }
 
-int magnitude_grid_plot() {
+void magnitude_grid_plot() {
    const uint32_t input_size = 200;     // Size of input data
    const uint32_t plot_size = 150;      // Size of each plot in the output image
    
