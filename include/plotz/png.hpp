@@ -80,8 +80,8 @@ typedef struct {
 } HuffmanCode;
 
 // Fixed Huffman codes for literals/lengths and distances
-HuffmanCode fixed_literal_length_codes[286];
-HuffmanCode fixed_distance_codes[30];
+inline HuffmanCode fixed_literal_length_codes[286];
+inline HuffmanCode fixed_distance_codes[30];
 
 // Tables for length and distance encoding
 typedef struct {
