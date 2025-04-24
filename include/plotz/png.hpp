@@ -1,7 +1,17 @@
+#pragma once
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+#include <math.h>
+#include <assert.h>
+
 /**
  * PNG Lossless Encoder Implementation
  *
- * A from-scratch implementation of a PNG encoder supporting RGB and RGBA formats
+ * An implementation of a PNG encoder supporting RGB and RGBA formats
  * that adheres strictly to the PNG specification.
  *
  * This implementation includes:
@@ -11,14 +21,6 @@
  * - zlib wrapper (including Adler-32 checksum)
  * - No external dependencies
  */
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
-#include <math.h>
-#include <assert.h>
 
 // PNG signature (8 bytes)
 static const uint8_t PNG_SIGNATURE[8] = {137, 80, 78, 71, 13, 10, 26, 10};
