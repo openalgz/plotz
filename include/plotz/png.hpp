@@ -22,9 +22,9 @@
 inline constexpr uint8_t PNG_SIGNATURE[8] = {137, 80, 78, 71, 13, 10, 26, 10};
 
 // PNG chunk types
-#define PNG_IHDR 0x49484452 // "IHDR"
-#define PNG_IDAT 0x49444154 // "IDAT"
-#define PNG_IEND 0x49454E44 // "IEND"
+inline constexpr uint32_t PNG_IHDR = 0x49484452; // "IHDR"
+inline constexpr uint32_t PNG_IDAT = 0x49444154; // "IDAT"
+inline constexpr uint32_t PNG_IEND = 0x49454E44; // "IEND"
 
 // PNG color types
 inline constexpr auto png_color_type_rgb = 2;
