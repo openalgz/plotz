@@ -245,6 +245,19 @@ std::vector<std::complex<float>> generateLissajous(int width, int height, int nu
    return data;
 }
 
+inline void write_png_file(const char* filename, uint32_t w, uint32_t h, const uint8_t* data)
+{
+   PNGImage *rgba_image = create_png_image(w, h, PNG_COLOR_TYPE_RGBA, data);
+   if (rgba_image) {
+      if (encode_png(rgba_image, filename)) {
+         printf("Successfully created PNG\n");
+      } else {
+         printf("Failed to create .PNG\n");
+      }
+      free_png_image(rgba_image);
+   }
+}
+
 void heatmap_test()
 {
    static constexpr size_t w = 1024, h = 1024, npoints = 1000;
@@ -291,15 +304,7 @@ void heatmap_test()
    qoi_desc desc{.width = w, .height = h, .channels = 4, .colorspace = 0};
    qoi_write("heatmap.qoi", image.data(), &desc);
    
-   PNGImage *rgba_image = create_png_image(w, h, PNG_COLOR_TYPE_RGBA, image.data());
-   if (rgba_image) {
-      if (encode_png(rgba_image, "heatmap_new.png")) {
-         printf("Successfully created rgba_test.png\n");
-      } else {
-         printf("Failed to create rgba_test.png\n");
-      }
-      free_png_image(rgba_image);
-   }
+   write_png_file("heatmap_new.png", w, h, image.data());
 }
 
 void magnitude_test()
@@ -328,6 +333,7 @@ void magnitude_test()
    
    qoi_desc desc{.width = w, .height = h, .channels = 4, .colorspace = 0};
    qoi_write("magnitude.qoi", image.data(), &desc);
+   write_png_file("magnitude_new.png", w, h, image.data());
 }
 
 void magnitude_test2()
@@ -373,6 +379,7 @@ void magnitude_test2()
    
    qoi_desc desc{.width = width, .height = height, .channels = 4, .colorspace = 0};
    qoi_write("magnitude2.qoi", image.data(), &desc);
+   write_png_file("magnitude2_new.png", width, height, image.data());
 }
 
 void magnitude_mapped_test()
