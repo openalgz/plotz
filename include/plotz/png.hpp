@@ -31,15 +31,15 @@ static const uint8_t PNG_SIGNATURE[8] = {137, 80, 78, 71, 13, 10, 26, 10};
 #define PNG_IEND 0x49454E44 // "IEND"
 
 // PNG color types
-#define PNG_COLOR_TYPE_RGB  2
-#define PNG_COLOR_TYPE_RGBA 6
+#define png_color_type_rgb  2
+#define png_color_type_rgba 6
 
 // PNG filter types
-#define PNG_FILTER_NONE    0
-#define PNG_FILTER_SUB     1
-#define PNG_FILTER_UP      2
-#define PNG_FILTER_AVERAGE 3
-#define PNG_FILTER_PAETH   4
+inline constexpr int png_filter_none    = 0;
+inline constexpr int png_filter_sub     = 1;
+inline constexpr int png_filter_up      = 2;
+inline constexpr int png_filter_average = 3;
+inline constexpr int png_filter_paeth   = 4;
 
 // PNG compression type (always 0 for DEFLATE)
 #define PNG_COMPRESSION_TYPE 0
@@ -323,13 +323,13 @@ static uint8_t paeth_predictor(int a, int b, int c) {
 
 // Apply the "None" filter (Type 0)
 static void apply_none_filter(uint8_t *filtered_row, const uint8_t *row, size_t bytes_per_pixel, size_t row_width) {
-   filtered_row[0] = PNG_FILTER_NONE;
+   filtered_row[0] = png_filter_none;
    memcpy(filtered_row + 1, row, row_width);
 }
 
 // Apply the "Sub" filter (Type 1)
 static void apply_sub_filter(uint8_t *filtered_row, const uint8_t *row, size_t bytes_per_pixel, size_t row_width) {
-   filtered_row[0] = PNG_FILTER_SUB;
+   filtered_row[0] = png_filter_sub;
    
    // First bytes_per_pixel bytes are copied as is
    for (size_t i = 0; i < bytes_per_pixel; i++) {
@@ -345,7 +345,7 @@ static void apply_sub_filter(uint8_t *filtered_row, const uint8_t *row, size_t b
 // Apply the "Up" filter (Type 2)
 static void apply_up_filter(uint8_t *filtered_row, const uint8_t *row, const uint8_t *prev_row,
                             size_t bytes_per_pixel, size_t row_width) {
-   filtered_row[0] = PNG_FILTER_UP;
+   filtered_row[0] = png_filter_up;
    
    for (size_t i = 0; i < row_width; i++) {
       filtered_row[i + 1] = row[i] - (prev_row ? prev_row[i] : 0);
@@ -355,7 +355,7 @@ static void apply_up_filter(uint8_t *filtered_row, const uint8_t *row, const uin
 // Apply the "Average" filter (Type 3)
 static void apply_average_filter(uint8_t *filtered_row, const uint8_t *row, const uint8_t *prev_row,
                                  size_t bytes_per_pixel, size_t row_width) {
-   filtered_row[0] = PNG_FILTER_AVERAGE;
+   filtered_row[0] = png_filter_average;
    
    for (size_t i = 0; i < row_width; i++) {
       uint8_t a = (i < bytes_per_pixel) ? 0 : row[i - bytes_per_pixel];
@@ -367,7 +367,7 @@ static void apply_average_filter(uint8_t *filtered_row, const uint8_t *row, cons
 // Apply the "Paeth" filter (Type 4)
 static void apply_paeth_filter(uint8_t *filtered_row, const uint8_t *row, const uint8_t *prev_row,
                                size_t bytes_per_pixel, size_t row_width) {
-   filtered_row[0] = PNG_FILTER_PAETH;
+   filtered_row[0] = png_filter_paeth;
    
    for (size_t i = 0; i < row_width; i++) {
       uint8_t a = (i < bytes_per_pixel) ? 0 : row[i - bytes_per_pixel];
@@ -834,7 +834,7 @@ bool encode_png(const PNGImage *image, const char *filename) {
    free_chunk(ihdr);
    
    // Calculate bytes per pixel
-   size_t bytes_per_pixel = (image->color_type == PNG_COLOR_TYPE_RGB) ? 3 : 4;
+   size_t bytes_per_pixel = (image->color_type == png_color_type_rgb) ? 3 : 4;
    
    // Calculate row width in bytes
    size_t row_width = image->width * bytes_per_pixel;
@@ -932,7 +932,7 @@ bool encode_png(const PNGImage *image, const char *filename) {
 
 // Create a PNG image from RGB or RGBA pixel data
 PNGImage* create_png_image(uint32_t width, uint32_t height, uint8_t color_type, const uint8_t *pixel_data) {
-   if (color_type != PNG_COLOR_TYPE_RGB && color_type != PNG_COLOR_TYPE_RGBA) {
+   if (color_type != png_color_type_rgb && color_type != png_color_type_rgba) {
       return NULL; // Only RGB and RGBA are supported
    }
    
@@ -945,7 +945,7 @@ PNGImage* create_png_image(uint32_t width, uint32_t height, uint8_t color_type, 
    image->color_type = color_type;
    
    // Calculate data size
-   size_t bytes_per_pixel = (color_type == PNG_COLOR_TYPE_RGB) ? 3 : 4;
+   size_t bytes_per_pixel = (color_type == png_color_type_rgb) ? 3 : 4;
    size_t data_size = width * height * bytes_per_pixel;
    
    image->data = (uint8_t*)malloc(data_size);
