@@ -32,8 +32,11 @@
 
 #pragma once
 
+// plot types
 #include "plotz/heatmap.hpp"
 #include "plotz/magnitude.hpp"
-#include "plotz/write_png.hpp"
 #include "plotz/render_text.hpp"
 #include "plotz/spectrum.hpp"
+
+// image formats
+#include "plotz/write_png.hpp"

@@ -54,6 +54,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   include(cmake/install-rules.cmake)
 endif()
 
+target_compile_features(${PROJECT_NAME}_${PROJECT_NAME} INTERFACE cxx_std_23)
 target_include_directories(${PROJECT_NAME}_${PROJECT_NAME} INTERFACE
     ${PNG_INCLUDE_DIRS}
     ${FREETYPE_INCLUDE_DIRS}
