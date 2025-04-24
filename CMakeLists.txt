@@ -14,16 +14,18 @@ include(cmake/variables.cmake)
 add_library(${PROJECT_NAME}_${PROJECT_NAME} OBJECT)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME}_${PROJECT_NAME})
 
-file(GLOB_RECURSE HEADER_FILES "${PROJECT_SOURCE_DIR}/include/*.hpp")
-file(GLOB_RECURSE SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/*.cpp")
+file(GLOB_RECURSE headers "${PROJECT_SOURCE_DIR}/include/*.hpp")
+file(GLOB_RECURSE sources "${PROJECT_SOURCE_DIR}/src/*.cpp")
+
+message(STATUS "Sources: ${sources}")
 
 target_sources(${PROJECT_NAME}_${PROJECT_NAME} 
     PRIVATE 
-        ${SOURCE_FILES}
+        ${sources}
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS "${PROJECT_SOURCE_DIR}/include"
-        FILES ${HEADER_FILES}
+        FILES ${headers}
 )
 
 if (MSVC)

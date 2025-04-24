@@ -10,6 +10,12 @@
 #include <vector>
 
 #include "plotz/plotz.hpp"
+#include "plotz/fpng.hpp"
+
+#define QOI_IMPLEMENTATION
+#include "plotz/qoi.hpp"
+
+#include "plotz/png.hpp"
 
 // Function to render text using FreeType
 inline void render_text_to_image(uint8_t* image, size_t img_width, size_t img_height, const std::string& text,
@@ -284,7 +290,21 @@ void heatmap_test()
    std::vector<uint8_t> image = hm.render();
 
    // Save the image using libpng.
-   return plotz::write_png("heatmap.png", image.data(), w, h);
+   plotz::write_png("heatmap_old.png", image.data(), w, h);
+   fpng::fpng_encode_image_to_file("heatmap.png", image.data(), w, h, 4, fpng::FPNG_ENCODE_SLOWER);
+   
+   qoi_desc desc{.width = w, .height = h, .channels = 4, .colorspace = 0};
+   qoi_write("heatmap.qoi", image.data(), &desc);
+   
+   PNGImage *rgba_image = create_png_image(w, h, PNG_COLOR_TYPE_RGBA, image.data());
+   if (rgba_image) {
+      if (encode_png(rgba_image, "heatmap_new.png")) {
+         printf("Successfully created rgba_test.png\n");
+      } else {
+         printf("Failed to create rgba_test.png\n");
+      }
+      free_png_image(rgba_image);
+   }
 }
 
 void magnitude_test()
@@ -308,7 +328,11 @@ void magnitude_test()
 
    plotz::render_text_to_image(image.data(), w, h, text, font_filename, font_percent);
 
-   return plotz::write_png("magnitude.png", image.data(), w, h);
+   plotz::write_png("magnitude_old.png", image.data(), w, h);
+   fpng::fpng_encode_image_to_file("magnitude.png", image.data(), w, h, 4, fpng::FPNG_ENCODE_SLOWER);
+   
+   qoi_desc desc{.width = w, .height = h, .channels = 4, .colorspace = 0};
+   qoi_write("magnitude.qoi", image.data(), &desc);
 }
 
 void magnitude_test2()
@@ -349,7 +373,11 @@ void magnitude_test2()
 
    std::vector<uint8_t> image = plot.render();
 
-   return plotz::write_png("magnitude2.png", image.data(), width, height);
+   plotz::write_png("magnitude2_old.png", image.data(), width, height);
+   fpng::fpng_encode_image_to_file("magnitude2.png", image.data(), width, height, 4, fpng::FPNG_ENCODE_SLOWER);
+   
+   qoi_desc desc{.width = width, .height = height, .channels = 4, .colorspace = 0};
+   qoi_write("magnitude2.qoi", image.data(), &desc);
 }
 
 void magnitude_mapped_test()

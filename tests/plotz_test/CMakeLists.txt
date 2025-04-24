@@ -1,6 +1,6 @@
 project(plotz_test)
 
-add_executable(${PROJECT_NAME} ${PROJECT_NAME}.cpp)
+add_executable(${PROJECT_NAME} ${PROJECT_NAME}.cpp $<TARGET_OBJECTS:plotz::plotz>)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE test_common)
 
