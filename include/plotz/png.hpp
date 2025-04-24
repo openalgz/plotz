@@ -68,7 +68,7 @@ typedef struct {
 } PNGImage;
 
 // Maximum window size for LZ77
-#define LZ77_WINDOW_SIZE 32768  // 32KB, maximum allowed in DEFLATE
+inline constexpr int LZ77_WINDOW_SIZE = 32768;  // 32KB, maximum allowed in DEFLATE
 
 // Structure to hold an LZ77 token
 typedef struct {
@@ -94,7 +94,7 @@ typedef struct {
 } CodeTableEntry;
 
 // Length code table
-CodeTableEntry length_table[29] = {
+inline constexpr CodeTableEntry length_table[29] = {
    {3, 0}, {4, 0}, {5, 0}, {6, 0}, {7, 0}, {8, 0}, {9, 0}, {10, 0},
    {11, 1}, {13, 1}, {15, 1}, {17, 1}, {19, 2}, {23, 2}, {27, 2}, {31, 2},
    {35, 3}, {43, 3}, {51, 3}, {59, 3}, {67, 4}, {83, 4}, {99, 4}, {115, 4},
@@ -102,7 +102,7 @@ CodeTableEntry length_table[29] = {
 };
 
 // Distance code table
-CodeTableEntry distance_table[30] = {
+inline constexpr CodeTableEntry distance_table[30] = {
    {1, 0}, {2, 0}, {3, 0}, {4, 0}, {5, 1}, {7, 1}, {9, 2}, {13, 2},
    {17, 3}, {25, 3}, {33, 4}, {49, 4}, {65, 5}, {97, 5}, {129, 6}, {193, 6},
    {257, 7}, {385, 7}, {513, 8}, {769, 8}, {1025, 9}, {1537, 9}, {2049, 10},
