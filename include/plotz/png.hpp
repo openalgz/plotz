@@ -115,7 +115,7 @@ typedef struct {
 } BitBuffer;
 
 // Reverse the bits in a value (for the specified number of bits)
-uint32_t reverse_bits(uint32_t value, uint8_t bit_count) {
+inline constexpr uint32_t reverse_bits(uint32_t value, uint8_t bit_count) {
    uint32_t result = 0;
    for (uint8_t i = 0; i < bit_count; i++) {
       result = (result << 1) | (value & 1);
@@ -125,7 +125,7 @@ uint32_t reverse_bits(uint32_t value, uint8_t bit_count) {
 }
 
 // Initialize the fixed Huffman codes
-void init_fixed_huffman_codes(void) {
+inline void init_fixed_huffman_codes(void) {
    // Literal/length fixed code assignment per DEFLATE spec:
    // 0-143: 8 bits, codes 00110000 through 10111111 (in other words, codes 48-191)
    // 144-255: 9 bits, codes 110010000 through 111111111 (in other words, codes 400-511)
