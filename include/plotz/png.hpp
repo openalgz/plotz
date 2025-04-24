@@ -24,7 +24,7 @@
  */
 
 // PNG signature (8 bytes)
-static const uint8_t PNG_SIGNATURE[8] = {137, 80, 78, 71, 13, 10, 26, 10};
+inline constexpr uint8_t PNG_SIGNATURE[8] = {137, 80, 78, 71, 13, 10, 26, 10};
 
 // PNG chunk types
 #define PNG_IHDR 0x49484452 // "IHDR"
@@ -310,7 +310,7 @@ void write_uint32(BitBuffer *buffer, uint32_t value) {
 // PNG filtering functions
 
 // Paeth predictor function as described in the PNG spec
-static uint8_t paeth_predictor(int a, int b, int c) {
+inline constexpr uint8_t paeth_predictor(int a, int b, int c) {
    int p = a + b - c;
    int pa = abs(p - a);
    int pb = abs(p - b);
@@ -322,13 +322,13 @@ static uint8_t paeth_predictor(int a, int b, int c) {
 }
 
 // Apply the "None" filter (Type 0)
-static void apply_none_filter(uint8_t *filtered_row, const uint8_t *row, size_t /*bytes_per_pixel*/, size_t row_width) {
+inline void apply_none_filter(uint8_t *filtered_row, const uint8_t *row, size_t /*bytes_per_pixel*/, size_t row_width) {
    filtered_row[0] = png_filter_none;
    std::memcpy(filtered_row + 1, row, row_width);
 }
 
 // Apply the "Sub" filter (Type 1)
-static void apply_sub_filter(uint8_t *filtered_row, const uint8_t *row, size_t bytes_per_pixel, size_t row_width) {
+inline void apply_sub_filter(uint8_t *filtered_row, const uint8_t *row, size_t bytes_per_pixel, size_t row_width) {
    filtered_row[0] = png_filter_sub;
    
    // First bytes_per_pixel bytes are copied as is
@@ -343,7 +343,7 @@ static void apply_sub_filter(uint8_t *filtered_row, const uint8_t *row, size_t b
 }
 
 // Apply the "Up" filter (Type 2)
-static void apply_up_filter(uint8_t *filtered_row, const uint8_t *row, const uint8_t *prev_row,
+inline constexpr void apply_up_filter(uint8_t *filtered_row, const uint8_t *row, const uint8_t *prev_row,
                             size_t /*bytes_per_pixel*/, size_t row_width) {
    filtered_row[0] = png_filter_up;
    
@@ -353,7 +353,7 @@ static void apply_up_filter(uint8_t *filtered_row, const uint8_t *row, const uin
 }
 
 // Apply the "Average" filter (Type 3)
-static void apply_average_filter(uint8_t *filtered_row, const uint8_t *row, const uint8_t *prev_row,
+inline constexpr void apply_average_filter(uint8_t *filtered_row, const uint8_t *row, const uint8_t *prev_row,
                                  size_t bytes_per_pixel, size_t row_width) {
    filtered_row[0] = png_filter_average;
    
@@ -365,7 +365,7 @@ static void apply_average_filter(uint8_t *filtered_row, const uint8_t *row, cons
 }
 
 // Apply the "Paeth" filter (Type 4)
-static void apply_paeth_filter(uint8_t *filtered_row, const uint8_t *row, const uint8_t *prev_row,
+inline constexpr void apply_paeth_filter(uint8_t *filtered_row, const uint8_t *row, const uint8_t *prev_row,
                                size_t bytes_per_pixel, size_t row_width) {
    filtered_row[0] = png_filter_paeth;
    
@@ -379,7 +379,7 @@ static void apply_paeth_filter(uint8_t *filtered_row, const uint8_t *row, const 
 }
 
 // Select the best filter for a row based on heuristic
-static uint8_t select_best_filter(uint8_t *filtered_rows[], const uint8_t *row, const uint8_t *prev_row,
+inline constexpr uint8_t select_best_filter(uint8_t *filtered_rows[], const uint8_t *row, const uint8_t *prev_row,
                                   size_t bytes_per_pixel, size_t row_width) {
    // Apply all filters
    apply_none_filter(filtered_rows[0], row, bytes_per_pixel, row_width);
@@ -408,7 +408,7 @@ static uint8_t select_best_filter(uint8_t *filtered_rows[], const uint8_t *row, 
 }
 
 // Create IHDR chunk
-PNGChunk* create_ihdr_chunk(const PNGImage *image) {
+inline PNGChunk* create_ihdr_chunk(const PNGImage *image) {
    PNGChunk *chunk = (PNGChunk*)malloc(sizeof(PNGChunk));
    if (!chunk) return NULL;
    
@@ -476,7 +476,7 @@ PNGChunk* create_ihdr_chunk(const PNGImage *image) {
 }
 
 // Create IEND chunk
-PNGChunk* create_iend_chunk(void) {
+inline PNGChunk* create_iend_chunk(void) {
    PNGChunk *chunk = (PNGChunk*)malloc(sizeof(PNGChunk));
    if (!chunk) return NULL;
    
@@ -498,7 +498,7 @@ PNGChunk* create_iend_chunk(void) {
 }
 
 // Write a chunk to a file
-bool write_chunk(FILE *file, const PNGChunk *chunk) {
+inline bool write_chunk(FILE *file, const PNGChunk *chunk) {
    // Write length (big-endian)
    uint8_t length_bytes[4] = {
       uint8_t((chunk->length >> 24) & 0xFF),
@@ -538,7 +538,7 @@ bool write_chunk(FILE *file, const PNGChunk *chunk) {
 }
 
 // Free a chunk
-void free_chunk(PNGChunk *chunk) {
+inline void free_chunk(PNGChunk *chunk) {
    if (chunk) {
       if (chunk->data) {
          free(chunk->data);
@@ -548,7 +548,7 @@ void free_chunk(PNGChunk *chunk) {
 }
 
 // Find the best match for LZ77 compression
-static bool find_match(const uint8_t *data, size_t data_size, size_t pos,
+inline bool find_match(const uint8_t *data, size_t data_size, size_t pos,
                        uint16_t *match_distance, uint16_t *match_length) {
    // Minimum match length (3 bytes as per DEFLATE spec)
    const size_t MIN_MATCH = 3;
@@ -600,7 +600,7 @@ static bool find_match(const uint8_t *data, size_t data_size, size_t pos,
 }
 
 // Compress data using DEFLATE with fixed Huffman codes
-BitBuffer* deflate_compress_fixed(const uint8_t *data, size_t data_size) {
+inline BitBuffer* deflate_compress_fixed(const uint8_t *data, size_t data_size) {
    BitBuffer *output = create_bit_buffer(data_size); // Initial capacity estimate
    if (!output) return NULL;
    
@@ -692,7 +692,7 @@ BitBuffer* deflate_compress_fixed(const uint8_t *data, size_t data_size) {
 }
 
 // Create zlib header
-void write_zlib_header(BitBuffer *buffer) {
+inline void write_zlib_header(BitBuffer *buffer) {
    // CMF byte:
    // - Bits 0-3: Compression method (8 = DEFLATE)
    // - Bits 4-7: Compression info (7 = 32K window size)
@@ -728,7 +728,7 @@ void write_zlib_footer(BitBuffer *buffer, uint32_t adler32) {
 }
 
 // Create IDAT chunk with compressed data
-PNGChunk* create_idat_chunk(const uint8_t *filtered_data, size_t filtered_data_size) {
+inline PNGChunk* create_idat_chunk(const uint8_t *filtered_data, size_t filtered_data_size) {
    // Calculate Adler-32 checksum of the uncompressed data
    uint32_t adler32 = calculate_adler32(filtered_data, filtered_data_size);
    
@@ -803,7 +803,7 @@ PNGChunk* create_idat_chunk(const uint8_t *filtered_data, size_t filtered_data_s
 }
 
 // Encode a PNG image
-bool encode_png(const PNGImage *image, const char *filename) {
+inline bool encode_png(const PNGImage *image, const char *filename) {
    // Initialize tables
    init_fixed_huffman_codes();
    
@@ -930,7 +930,7 @@ bool encode_png(const PNGImage *image, const char *filename) {
 }
 
 // Create a PNG image from RGB or RGBA pixel data
-PNGImage* create_png_image(uint32_t width, uint32_t height, uint8_t color_type, const uint8_t *pixel_data) {
+inline PNGImage* create_png_image(uint32_t width, uint32_t height, uint8_t color_type, const uint8_t *pixel_data) {
    if (color_type != png_color_type_rgb && color_type != png_color_type_rgba) {
       return NULL; // Only RGB and RGBA are supported
    }
@@ -960,7 +960,7 @@ PNGImage* create_png_image(uint32_t width, uint32_t height, uint8_t color_type, 
 }
 
 // Free a PNG image
-void free_png_image(PNGImage *image) {
+inline void free_png_image(PNGImage *image) {
    if (image) {
       if (image->data) {
          free(image->data);
