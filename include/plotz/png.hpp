@@ -116,6 +116,16 @@ typedef struct {
    uint8_t bit_count;       // Number of bits in the bit buffer
 } BitBuffer;
 
+// Reverse the bits in a value (for the specified number of bits)
+uint32_t reverse_bits(uint32_t value, uint8_t bit_count) {
+   uint32_t result = 0;
+   for (uint8_t i = 0; i < bit_count; i++) {
+      result = (result << 1) | (value & 1);
+      value >>= 1;
+   }
+   return result;
+}
+
 // Initialize the fixed Huffman codes
 void init_fixed_huffman_codes(void) {
    // Literal/length fixed code assignment per DEFLATE spec:
@@ -233,6 +243,7 @@ bool expand_bit_buffer(BitBuffer *buffer, size_t additional_bytes) {
 
 // Write bits to the bit buffer
 void write_bits(BitBuffer *buffer, uint32_t bits, uint8_t bit_count) {
+   // In DEFLATE, bits are written LSB first
    buffer->bit_buffer |= (bits << buffer->bit_count);
    buffer->bit_count += bit_count;
    
@@ -636,8 +647,9 @@ BitBuffer* deflate_compress_fixed(const uint8_t *data, size_t data_size) {
             }
          }
          
-         // Write length code
-         write_bits(output, fixed_literal_length_codes[length_code].code,
+         // Write length code with reverse bits (LSB first for DEFLATE)
+         write_bits(output, reverse_bits(fixed_literal_length_codes[length_code].code,
+                                         fixed_literal_length_codes[length_code].bits),
                     fixed_literal_length_codes[length_code].bits);
          
          // Write length extra bits (if any)
@@ -645,8 +657,9 @@ BitBuffer* deflate_compress_fixed(const uint8_t *data, size_t data_size) {
             write_bits(output, length_extra_bits, length_extra_bits_count);
          }
          
-         // Write distance code
-         write_bits(output, fixed_distance_codes[distance_code].code,
+         // Write distance code with reverse bits (LSB first for DEFLATE)
+         write_bits(output, reverse_bits(fixed_distance_codes[distance_code].code,
+                                         fixed_distance_codes[distance_code].bits),
                     fixed_distance_codes[distance_code].bits);
          
          // Write distance extra bits (if any)
@@ -657,15 +670,17 @@ BitBuffer* deflate_compress_fixed(const uint8_t *data, size_t data_size) {
          // Advance past the matched data
          pos += match_length;
       } else {
-         // No match - encode literal byte
-         write_bits(output, fixed_literal_length_codes[data[pos]].code,
+         // No match - encode literal byte with reverse bits (LSB first for DEFLATE)
+         write_bits(output, reverse_bits(fixed_literal_length_codes[data[pos]].code,
+                                         fixed_literal_length_codes[data[pos]].bits),
                     fixed_literal_length_codes[data[pos]].bits);
          pos++;
       }
    }
    
-   // Write end-of-block marker (code 256)
-   write_bits(output, fixed_literal_length_codes[256].code,
+   // Write end-of-block marker (code 256) with reverse bits (LSB first for DEFLATE)
+   write_bits(output, reverse_bits(fixed_literal_length_codes[256].code,
+                                   fixed_literal_length_codes[256].bits),
               fixed_literal_length_codes[256].bits);
    
    // Flush any remaining bits

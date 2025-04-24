@@ -196,11 +196,6 @@ std::vector<std::complex<float>> generateMandelbrot(int width, int height, int m
 {
    std::vector<std::complex<float>> data;
 
-   float xMin = 0.0f;
-   float xMax = static_cast<float>(width);
-   float yMin = 0.0f;
-   float yMax = static_cast<float>(height);
-
    for (int px = 0; px < width; ++px) {
       for (int py = 0; py < height; ++py) {
          // Map pixel to complex plane
