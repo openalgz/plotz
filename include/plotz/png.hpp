@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <string.h>
+#include <cstring>
 #include <math.h>
 #include <assert.h>
 
@@ -291,7 +291,7 @@ void write_bytes(BitBuffer *buffer, const uint8_t *data, size_t length) {
       return; // Failed to expand buffer
    }
    
-   memcpy(buffer->buffer + buffer->size, data, length);
+   std::memcpy(buffer->buffer + buffer->size, data, length);
    buffer->size += length;
 }
 
@@ -322,9 +322,9 @@ static uint8_t paeth_predictor(int a, int b, int c) {
 }
 
 // Apply the "None" filter (Type 0)
-static void apply_none_filter(uint8_t *filtered_row, const uint8_t *row, size_t bytes_per_pixel, size_t row_width) {
+static void apply_none_filter(uint8_t *filtered_row, const uint8_t *row, size_t /*bytes_per_pixel*/, size_t row_width) {
    filtered_row[0] = png_filter_none;
-   memcpy(filtered_row + 1, row, row_width);
+   std::memcpy(filtered_row + 1, row, row_width);
 }
 
 // Apply the "Sub" filter (Type 1)
@@ -344,7 +344,7 @@ static void apply_sub_filter(uint8_t *filtered_row, const uint8_t *row, size_t b
 
 // Apply the "Up" filter (Type 2)
 static void apply_up_filter(uint8_t *filtered_row, const uint8_t *row, const uint8_t *prev_row,
-                            size_t bytes_per_pixel, size_t row_width) {
+                            size_t /*bytes_per_pixel*/, size_t row_width) {
    filtered_row[0] = png_filter_up;
    
    for (size_t i = 0; i < row_width; i++) {
@@ -466,8 +466,8 @@ PNGChunk* create_ihdr_chunk(const PNGImage *image) {
       return NULL;
    }
    
-   memcpy(crc_buffer, type_bytes, 4);
-   memcpy(crc_buffer + 4, chunk->data, chunk->length);
+   std::memcpy(crc_buffer, type_bytes, 4);
+   std::memcpy(crc_buffer + 4, chunk->data, chunk->length);
    
    chunk->crc = calculate_crc(crc_buffer, 4 + chunk->length);
    free(crc_buffer);
@@ -760,7 +760,7 @@ PNGChunk* create_idat_chunk(const uint8_t *filtered_data, size_t filtered_data_s
       return NULL;
    }
    
-   chunk->length = zlib_data->size;
+   chunk->length = uint32_t(zlib_data->size);
    chunk->type = PNG_IDAT;
    chunk->data = (uint8_t*)malloc(chunk->length);
    
@@ -771,7 +771,7 @@ PNGChunk* create_idat_chunk(const uint8_t *filtered_data, size_t filtered_data_s
    }
    
    // Copy compressed data to chunk
-   memcpy(chunk->data, zlib_data->buffer, zlib_data->size);
+   std::memcpy(chunk->data, zlib_data->buffer, zlib_data->size);
    
    // Calculate CRC
    uint8_t type_bytes[4] = {
@@ -790,8 +790,8 @@ PNGChunk* create_idat_chunk(const uint8_t *filtered_data, size_t filtered_data_s
       return NULL;
    }
    
-   memcpy(crc_buffer, type_bytes, 4);
-   memcpy(crc_buffer + 4, chunk->data, chunk->length);
+   std::memcpy(crc_buffer, type_bytes, 4);
+   std::memcpy(crc_buffer + 4, chunk->data, chunk->length);
    
    chunk->crc = calculate_crc(crc_buffer, 4 + chunk->length);
    free(crc_buffer);
@@ -878,7 +878,7 @@ bool encode_png(const PNGImage *image, const char *filename) {
       uint8_t best_filter = select_best_filter(filtered_rows, row, prev_row, bytes_per_pixel, row_width);
       
       // Copy the best filtered row to the filtered_data buffer
-      memcpy(filtered_data + filtered_offset, filtered_rows[best_filter], 1 + row_width);
+      std::memcpy(filtered_data + filtered_offset, filtered_rows[best_filter], 1 + row_width);
       filtered_offset += 1 + row_width;
       
       // Update prev_row for the next iteration
@@ -954,7 +954,7 @@ PNGImage* create_png_image(uint32_t width, uint32_t height, uint8_t color_type, 
    }
    
    // Copy pixel data
-   memcpy(image->data, pixel_data, data_size);
+   std::memcpy(image->data, pixel_data, data_size);
    
    return image;
 }
