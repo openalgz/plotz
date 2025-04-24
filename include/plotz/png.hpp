@@ -1,13 +1,8 @@
 #pragma once
 
 #include <array>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
 #include <cstring>
-#include <math.h>
-#include <assert.h>
+#include <cmath>
 
 /**
  * PNG Lossless Encoder Implementation
@@ -32,8 +27,8 @@ inline constexpr uint8_t PNG_SIGNATURE[8] = {137, 80, 78, 71, 13, 10, 26, 10};
 #define PNG_IEND 0x49454E44 // "IEND"
 
 // PNG color types
-#define png_color_type_rgb  2
-#define png_color_type_rgba 6
+inline constexpr auto png_color_type_rgb = 2;
+inline constexpr auto png_color_type_rgba = 6;
 
 // PNG filter types
 inline constexpr int png_filter_none    = 0;
