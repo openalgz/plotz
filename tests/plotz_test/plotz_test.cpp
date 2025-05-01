@@ -10,12 +10,6 @@
 #include <vector>
 
 #include "plotz/plotz.hpp"
-#include "plotz/fpng.hpp"
-
-#define QOI_IMPLEMENTATION
-#include "plotz/qoi.hpp"
-
-#include "plotz/png.hpp"
 
 // Function to render text using FreeType
 inline void render_text_to_image(uint8_t* image, size_t img_width, size_t img_height, const std::string& text,
@@ -245,19 +239,6 @@ std::vector<std::complex<float>> generateLissajous(int width, int height, int nu
    return data;
 }
 
-inline void write_png_file(const char* filename, uint32_t w, uint32_t h, const uint8_t* data)
-{
-   PNGImage *rgba_image = create_png_image(w, h, PNG_COLOR_TYPE_RGBA, data);
-   if (rgba_image) {
-      if (encode_png(rgba_image, filename)) {
-         printf("Successfully created PNG\n");
-      } else {
-         printf("Failed to create .PNG\n");
-      }
-      free_png_image(rgba_image);
-   }
-}
-
 void heatmap_test()
 {
    static constexpr size_t w = 1024, h = 1024, npoints = 1000;
@@ -298,13 +279,7 @@ void heatmap_test()
    std::vector<uint8_t> image = hm.render();
 
    // Save the image using libpng.
-   plotz::write_png("heatmap_old.png", image.data(), w, h);
-   fpng::fpng_encode_image_to_file("heatmap.png", image.data(), w, h, 4, fpng::FPNG_ENCODE_SLOWER);
-   
-   qoi_desc desc{.width = w, .height = h, .channels = 4, .colorspace = 0};
-   qoi_write("heatmap.qoi", image.data(), &desc);
-   
-   write_png_file("heatmap_new.png", w, h, image.data());
+   plotz::write_png("heatmap.png", image.data(), w, h);
 }
 
 void magnitude_test()
@@ -328,12 +303,7 @@ void magnitude_test()
 
    plotz::render_text_to_image(image.data(), w, h, text, font_filename, font_percent);
 
-   plotz::write_png("magnitude_old.png", image.data(), w, h);
-   fpng::fpng_encode_image_to_file("magnitude.png", image.data(), w, h, 4, fpng::FPNG_ENCODE_SLOWER);
-   
-   qoi_desc desc{.width = w, .height = h, .channels = 4, .colorspace = 0};
-   qoi_write("magnitude.qoi", image.data(), &desc);
-   write_png_file("magnitude_new.png", w, h, image.data());
+   plotz::write_png("magnitude.png", image.data(), w, h);
 }
 
 void magnitude_test2()
@@ -374,12 +344,7 @@ void magnitude_test2()
 
    std::vector<uint8_t> image = plot.render();
 
-   plotz::write_png("magnitude2_old.png", image.data(), width, height);
-   fpng::fpng_encode_image_to_file("magnitude2.png", image.data(), width, height, 4, fpng::FPNG_ENCODE_SLOWER);
-   
-   qoi_desc desc{.width = width, .height = height, .channels = 4, .colorspace = 0};
-   qoi_write("magnitude2.qoi", image.data(), &desc);
-   write_png_file("magnitude2_new.png", width, height, image.data());
+   plotz::write_png("magnitude2.png", image.data(), width, height);
 }
 
 void magnitude_mapped_test()
