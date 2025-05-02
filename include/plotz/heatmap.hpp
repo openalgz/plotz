@@ -39,8 +39,6 @@ namespace plotz
       std::vector<float> buffer;
    };
 
-   inline size_t get_color_count(auto& colors) { return colors.size() / 4; }
-
    struct heatmap final
    {
       heatmap(uint32_t width_in, uint32_t height_in) noexcept;

@@ -8,6 +8,8 @@
 
 namespace plotz
 {
+   inline size_t get_color_count(auto& colors) { return colors.size() / 4; }
+   
    using rgba = std::array<uint8_t, 4>;
 
    inline constexpr rgba white{255, 255, 255, 255};
