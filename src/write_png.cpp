@@ -5,7 +5,9 @@
 
 #include <png.h>
 
+#include <cstdio>
 #include <format>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
