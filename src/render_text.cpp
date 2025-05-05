@@ -3,6 +3,7 @@
 
 #include "plotz/render_text.hpp"
 
+#include <algorithm>
 #include <iostream>
 
 namespace plotz
